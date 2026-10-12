@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'IBM Plex Sans Arabic', 'Inter', system-ui, sans-serif;
+  --color-ink: #16213a;
+  --color-muted: #5b6478;
+  --color-line: #e4e1d8;
+  --color-line-strong: #cfc9bb;
+  --color-paper: #f7f5f0;
+  --color-surface: #ffffff;
+  --color-subtle: #fbfaf7;
+  --color-sunken: #efece4;
+  --color-chip: #f1eee7;
+  --color-brand: #1f3d6b;
+  --color-brand-soft: #e7edf6;
+  --color-accent: #b5832f;
+  --color-accent-soft: #f6eedf;
+  --color-accent-ink: #8a6220;
+  --color-danger: #b42318;
+  --color-danger-soft: #fdecea;
+  --color-danger-tint: #fef7f6;
+  --color-danger-line: #f3c7c2;
+  --color-success: #1e7a46;
+  --color-success-soft: #e7f4ec;
+  --color-warn: #a15c07;
+  --color-warn-soft: #fff4e0;
+  --color-warn-tint: #fdf9f1;
+  --color-warn-line: #ecd9b4;
+}
+
+/* Night palette: navy + brass identity for contrast on deep ink surfaces */
+.dark {
+  color-scheme: dark;
+  --color-ink: #e8ebf1;
+  --color-muted: #9aa3b5;
+  --color-line: #263040;
+  --color-line-strong: #3a4659;
+  --color-paper: #0e131b;
+  --color-surface: #151c27;
+  --color-subtle: #1a2230;
+  --color-sunken: #0b1017;
+  --color-chip: #212a38;
+  --color-brand: #5a86cc;
+  --color-brand-soft: #1b2840;
+  --color-accent: #cf9c48;
+  --color-accent-soft: #2d2517;
+  --color-accent-ink: #e4b96e;
+  --color-danger: #e5574d;
+  --color-danger-soft: #3a1d1c;
+  --color-danger-tint: #1f1718;
+  --color-danger-line: #552b28;
+  --color-success: #5fc68a;
+  --color-success-soft: #15301f;
+  --color-warn: #e9a84a;
+  --color-warn-soft: #33260f;
+  --color-warn-tint: #1d1a13;
+  --color-warn-line: #4a3a1c;
+}
+
+html[lang='ar'] body {
+  font-family: 'IBM Plex Sans Arabic', 'Inter', sans-serif;
+  line-height: 1.75;
+}
+
+html[lang='en'] body {
+  font-family: 'Inter', 'IBM Plex Sans Arabic', sans-serif;
+  line-height: 1.6;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color .2s, color .2s;
+}
+
+@keyframes shimmer {
+  0% { opacity: .5 }
+  50% { opacity: 1 }
+  100% { opacity: .5 }
+}
+
+.skeleton {
+  background: var(--color-sunken);
+  border-radius: .75rem;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.rise {
+  animation: rise .25s ease-out;
+}
