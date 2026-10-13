@@ -33,6 +33,15 @@ import {
   deleteActivityAction,
   saveReportAction,
   deleteReportAction,
+  saveSlotAction,
+  deleteSlotAction,
+  saveCourseAction,
+  deleteCourseAction,
+  saveScheduleExceptionAction,
+  deleteScheduleExceptionAction,
+  type SaveSlotInput,
+  type SaveCourseInput,
+  type SaveScheduleExceptionInput,
 } from '@/lib/actions/academic'
 import { createClient } from '@/lib/supabase/client'
 
@@ -42,11 +51,15 @@ export type EditableItem =
   | { kind: 'resource'; item: Resource }
   | { kind: 'activity'; item: Activity }
   | { kind: 'report'; item: Report }
+  | { kind: 'slot'; item: Slot }
+  | { kind: 'course'; item: Course }
+  | { kind: 'exception'; item: ScheduleException }
 
 export type EditorTarget = {
-  kind: 'resource' | 'activity' | 'report'
-  item?: Resource | Activity | Report
+  kind: 'resource' | 'activity' | 'report' | 'slot' | 'course' | 'exception'
+  item?: Resource | Activity | Report | Slot | Course | ScheduleException
   courseId?: string
+  slotId?: string
 }
 
 export interface SaveItemPayload {
@@ -106,7 +119,14 @@ interface I18nContextType {
 
   saveItem: (entry: SaveItemPayload, isNew: boolean) => Promise<{ success: boolean; error?: string }>
   removeItem: (entry: EditableItem) => Promise<{ success: boolean; error?: string }>
+  saveSlot: (input: SaveSlotInput) => Promise<{ success: boolean; error?: string }>
+  removeSlot: (id: string) => Promise<{ success: boolean; error?: string }>
+  saveCourse: (input: SaveCourseInput) => Promise<{ success: boolean; error?: string }>
+  removeCourse: (id: string) => Promise<{ success: boolean; error?: string }>
+  saveException: (input: SaveScheduleExceptionInput) => Promise<{ success: boolean; error?: string }>
+  removeException: (id: string) => Promise<{ success: boolean; error?: string }>
 }
+
 
 const I18nContext = createContext<I18nContextType | null>(null)
 
@@ -338,12 +358,111 @@ export function I18nProvider({
         } else if (entry.kind === 'report') {
           const res = await deleteReportAction(entry.item.id)
           if (!res.success) return { success: false, error: res.error }
+        } else if (entry.kind === 'slot') {
+          const res = await deleteSlotAction(entry.item.id)
+          if (!res.success) return { success: false, error: res.error }
+        } else if (entry.kind === 'course') {
+          const res = await deleteCourseAction(entry.item.id)
+          if (!res.success) return { success: false, error: res.error }
+        } else if (entry.kind === 'exception') {
+          const res = await deleteScheduleExceptionAction(entry.item.id)
+          if (!res.success) return { success: false, error: res.error }
         }
 
         await refreshData()
         return { success: true }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Unknown delete error'
+        return { success: false, error: errorMsg }
+      }
+    },
+    [refreshData]
+  )
+
+  const saveSlot = useCallback(
+    async (input: SaveSlotInput): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const res = await saveSlotAction(input)
+        if (!res.success) return { success: false, error: res.error }
+        await refreshData()
+        return { success: true }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Failed to save slot'
+        return { success: false, error: errorMsg }
+      }
+    },
+    [refreshData]
+  )
+
+  const removeSlot = useCallback(
+    async (id: string): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const res = await deleteSlotAction(id)
+        if (!res.success) return { success: false, error: res.error }
+        await refreshData()
+        return { success: true }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Failed to delete slot'
+        return { success: false, error: errorMsg }
+      }
+    },
+    [refreshData]
+  )
+
+  const saveCourse = useCallback(
+    async (input: SaveCourseInput): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const res = await saveCourseAction(input)
+        if (!res.success) return { success: false, error: res.error }
+        await refreshData()
+        return { success: true }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Failed to save course'
+        return { success: false, error: errorMsg }
+      }
+    },
+    [refreshData]
+  )
+
+  const removeCourse = useCallback(
+    async (id: string): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const res = await deleteCourseAction(id)
+        if (!res.success) return { success: false, error: res.error }
+        await refreshData()
+        return { success: true }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Failed to delete course'
+        return { success: false, error: errorMsg }
+      }
+    },
+    [refreshData]
+  )
+
+  const saveException = useCallback(
+    async (input: SaveScheduleExceptionInput): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const res = await saveScheduleExceptionAction(input)
+        if (!res.success) return { success: false, error: res.error }
+        await refreshData()
+        return { success: true }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Failed to save exception'
+        return { success: false, error: errorMsg }
+      }
+    },
+    [refreshData]
+  )
+
+  const removeException = useCallback(
+    async (id: string): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const res = await deleteScheduleExceptionAction(id)
+        if (!res.success) return { success: false, error: res.error }
+        await refreshData()
+        return { success: true }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Failed to delete exception'
         return { success: false, error: errorMsg }
       }
     },
@@ -427,6 +546,12 @@ export function I18nProvider({
       refreshData,
       saveItem,
       removeItem,
+      saveSlot,
+      removeSlot,
+      saveCourse,
+      removeCourse,
+      saveException,
+      removeException,
     }),
     [
       lang,
@@ -457,8 +582,15 @@ export function I18nProvider({
       refreshData,
       saveItem,
       removeItem,
+      saveSlot,
+      removeSlot,
+      saveCourse,
+      removeCourse,
+      saveException,
+      removeException,
     ]
   )
+
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }

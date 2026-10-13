@@ -443,8 +443,225 @@ export async function deleteScheduleExceptionAction(id: string): Promise<ActionR
 }
 
 // ==============================================================================
-// 5. ATTACHMENT UPLOAD ACTION
+// 5. TIMETABLE SLOTS ACTIONS
 // ==============================================================================
+
+export interface SaveSlotInput {
+  id?: string
+  courseId: string
+  weekday: number
+  startTime: string
+  endTime: string
+  room: string
+  kind: 'lecture' | 'lab'
+}
+
+export async function saveSlotAction(
+  input: SaveSlotInput
+): Promise<ActionResult<{ id: string }>> {
+  const auth = await verifyPublisherAuth()
+  if (!auth.authorized || !auth.supabase) {
+    return { success: false, error: auth.error }
+  }
+
+  const { courseId, weekday, startTime, endTime, room, kind } = input
+  const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/
+
+  if (
+    !courseId?.trim() ||
+    typeof weekday !== 'number' ||
+    weekday < 0 ||
+    weekday > 6 ||
+    !timeRegex.test(startTime) ||
+    !timeRegex.test(endTime) ||
+    startTime >= endTime ||
+    !room?.trim() ||
+    (kind !== 'lecture' && kind !== 'lab')
+  ) {
+    return { success: false, error: 'Validation failed: Invalid slot timing or room data.' }
+  }
+
+  const db = auth.supabase as unknown as {
+    from: (table: string) => {
+      insert: (data: unknown) => {
+        select: (cols: string) => { single: () => Promise<{ data: { id: string } | null; error: { message: string } | null }> }
+      }
+      update: (data: unknown) => {
+        eq: (col: string, val: unknown) => Promise<{ error: { message: string } | null }>
+      }
+      delete: () => {
+        eq: (col: string, val: unknown) => Promise<{ error: { message: string } | null }>
+      }
+    }
+  }
+
+  let slotId = input.id
+
+  const payload = {
+    course_id: courseId.trim(),
+    weekday,
+    start_time: startTime,
+    end_time: endTime,
+    room: room.trim(),
+    kind,
+  }
+
+  if (slotId && isValidUUID(slotId)) {
+    const { error: updateError } = await db
+      .from('slots')
+      .update(payload)
+      .eq('id', slotId)
+
+    if (updateError) {
+      return { success: false, error: `Failed to update slot: ${updateError.message}` }
+    }
+  } else {
+    const { data: newRow, error: insertError } = await db
+      .from('slots')
+      .insert(payload)
+      .select('id')
+      .single()
+
+    if (insertError || !newRow) {
+      return { success: false, error: `Failed to create slot: ${insertError?.message}` }
+    }
+    slotId = newRow.id
+  }
+
+  return { success: true, data: { id: slotId } }
+}
+
+export async function deleteSlotAction(id: string): Promise<ActionResult> {
+  if (!id || !isValidUUID(id)) {
+    return { success: false, error: 'Invalid slot ID. Must be a valid UUID.' }
+  }
+
+  const auth = await verifyPublisherAuth()
+  if (!auth.authorized || !auth.supabase) {
+    return { success: false, error: auth.error }
+  }
+
+  const { error } = await auth.supabase.from('slots').delete().eq('id', id)
+  if (error) {
+    return { success: false, error: `Failed to delete slot: ${error.message}` }
+  }
+
+  return { success: true }
+}
+
+// ==============================================================================
+// 6. COURSES ACTIONS
+// ==============================================================================
+
+export interface SaveCourseInput {
+  id?: string
+  code: string
+  nameAr: string
+  nameEn: string
+  instructorAr: string
+  instructorEn: string
+  color?: string
+  credits?: number
+  descAr?: string
+  descEn?: string
+}
+
+export async function saveCourseAction(
+  input: SaveCourseInput
+): Promise<ActionResult<{ id: string }>> {
+  const auth = await verifyPublisherAuth()
+  if (!auth.authorized || !auth.supabase) {
+    return { success: false, error: auth.error }
+  }
+
+  const { code, nameAr, nameEn, instructorAr, instructorEn } = input
+  if (
+    !code?.trim() ||
+    !nameAr?.trim() ||
+    !nameEn?.trim() ||
+    !instructorAr?.trim() ||
+    !instructorEn?.trim()
+  ) {
+    return { success: false, error: 'Validation failed: Course code, name, and instructor are required.' }
+  }
+
+  const db = auth.supabase as unknown as {
+    from: (table: string) => {
+      insert: (data: unknown) => {
+        select: (cols: string) => { single: () => Promise<{ data: { id: string } | null; error: { message: string } | null }> }
+      }
+      update: (data: unknown) => {
+        eq: (col: string, val: unknown) => Promise<{ error: { message: string } | null }>
+      }
+      delete: () => {
+        eq: (col: string, val: unknown) => Promise<{ error: { message: string } | null }>
+      }
+    }
+  }
+
+  // Generate ID if new and none provided
+  const courseId = input.id?.trim() || `c_${code.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now().toString(36)}`
+
+  const payload = {
+    id: courseId,
+    code: code.trim(),
+    name_ar: nameAr.trim(),
+    name_en: nameEn.trim(),
+    instructor_ar: instructorAr.trim(),
+    instructor_en: instructorEn.trim(),
+    color: input.color?.trim() || '#1f3d6b',
+    credits: typeof input.credits === 'number' && input.credits > 0 ? input.credits : 3,
+    desc_ar: input.descAr?.trim() || '',
+    desc_en: input.descEn?.trim() || '',
+    updated_at: new Date().toISOString(),
+  }
+
+  if (input.id) {
+    const { error: updateError } = await db
+      .from('courses')
+      .update(payload)
+      .eq('id', input.id)
+
+    if (updateError) {
+      return { success: false, error: `Failed to update course: ${updateError.message}` }
+    }
+  } else {
+    const { data: newRow, error: insertError } = await db
+      .from('courses')
+      .insert(payload)
+      .select('id')
+      .single()
+
+    if (insertError || !newRow) {
+      return { success: false, error: `Failed to create course: ${insertError?.message}` }
+    }
+  }
+
+  return { success: true, data: { id: courseId } }
+}
+
+export async function deleteCourseAction(id: string): Promise<ActionResult> {
+  if (!id?.trim()) {
+    return { success: false, error: 'Invalid course ID.' }
+  }
+
+  const auth = await verifyPublisherAuth()
+  if (!auth.authorized || !auth.supabase) {
+    return { success: false, error: auth.error }
+  }
+
+  const { error } = await auth.supabase.from('courses').delete().eq('id', id.trim())
+  if (error) {
+    return { success: false, error: `Failed to delete course: ${error.message}` }
+  }
+
+  return { success: true }
+}
+
+// ==============================================================================
+// 7. ATTACHMENT UPLOAD ACTION
+// ==============================================================================
+
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024 // 50 MB limit
 

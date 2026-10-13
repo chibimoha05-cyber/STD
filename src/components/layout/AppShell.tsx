@@ -5,11 +5,16 @@ import { DesktopSidebar } from '@/components/layout/DesktopSidebar'
 import { MobileHeader } from '@/components/layout/MobileHeader'
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { FilePreviewModal } from '@/components/preview/FilePreviewModal'
-import { ContentEditorModal } from '@/components/publisher/ContentEditorModal'
+import { ContentEditorModal, type ContentEditorTarget } from '@/components/publisher/ContentEditorModal'
+import { SlotEditorModal } from '@/components/publisher/SlotEditorModal'
+import { CourseEditorModal } from '@/components/publisher/CourseEditorModal'
+import { ScheduleExceptionModal } from '@/components/publisher/ScheduleExceptionModal'
+import { UrgentBanner } from '@/components/layout/UrgentBanner'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
 import { useI18n, type SaveItemPayload } from '@/lib/i18n/context'
+import type { Slot, Course, ScheduleException } from '@/lib/data/initialData'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const {
@@ -23,6 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     toastMsg,
     showToast,
     courses,
+    slots,
     t,
     L,
     saveItem,
@@ -56,7 +62,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <DesktopSidebar />
       <MobileHeader />
 
-      <main className="lg:ps-68 flex-1">
+      <main className="lg:ps-68 flex-1 flex flex-col">
+        <UrgentBanner />
+
         {publisher && (
           <div className="hidden lg:flex items-center gap-2 bg-accent-soft text-accent-ink text-[13px] px-8 h-9 border-b border-warn-line font-medium">
             <Icon name="shield" className="size-4" />
@@ -64,7 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-10 pb-28 lg:pb-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-10 pb-28 lg:pb-12 flex-1 w-full">
           {children}
         </div>
       </main>
@@ -78,15 +86,60 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         isPublisher={publisher}
       />
 
-      {/* Global Content Editor Modal */}
-      {editorTarget && (
-        <ContentEditorModal
-          target={editorTarget}
+      {/* Global Content Editor Modal (Resources, Activities, Reports) */}
+      {editorTarget &&
+        (editorTarget.kind === 'resource' ||
+          editorTarget.kind === 'activity' ||
+          editorTarget.kind === 'report') && (
+          <ContentEditorModal
+            target={editorTarget as ContentEditorTarget}
+            courses={courses}
+            onClose={() => setEditorTarget(null)}
+            onSave={handleSave}
+          />
+        )}
+
+      {/* Global Slot Editor Modal */}
+      {editorTarget && editorTarget.kind === 'slot' && (
+        <SlotEditorModal
+          slot={editorTarget.item as Slot | undefined}
+          initialCourseId={editorTarget.courseId}
           courses={courses}
           onClose={() => setEditorTarget(null)}
-          onSave={handleSave}
+          onSaved={() => setEditorTarget(null)}
         />
       )}
+
+      {/* Global Course Editor Modal */}
+      {editorTarget && editorTarget.kind === 'course' && (
+        <CourseEditorModal
+          course={editorTarget.item as Course | undefined}
+          onClose={() => setEditorTarget(null)}
+          onSaved={() => setEditorTarget(null)}
+        />
+      )}
+
+      {/* Global Schedule Exception Modal */}
+      {editorTarget && editorTarget.kind === 'exception' && (
+        <ScheduleExceptionModal
+          slot={
+            editorTarget.item
+              ? slots.find((s) => s.id === (editorTarget.item as ScheduleException).slotId) ||
+                slots[0]
+              : slots.find((s) => s.id === editorTarget.slotId) || slots[0]
+          }
+          course={courses.find(
+            (c) =>
+              c.id ===
+              (slots.find((s) => s.id === editorTarget.slotId)?.courseId ||
+                slots[0]?.courseId)
+          )}
+          exception={editorTarget.item as ScheduleException | undefined}
+          onClose={() => setEditorTarget(null)}
+          onSaved={() => setEditorTarget(null)}
+        />
+      )}
+
 
       {/* Global Delete Confirmation Modal */}
       <Modal
@@ -109,10 +162,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </span>
           <p className="text-sm text-muted leading-relaxed">
             {deletingItem &&
-              t('confirmDeleteMsg', { t: L(deletingItem.item?.title) })}
+              t('confirmDeleteMsg', {
+                t:
+                  'title' in deletingItem.item
+                    ? L(deletingItem.item.title)
+                    : 'name' in deletingItem.item
+                    ? L(deletingItem.item.name)
+                    : 'room' in deletingItem.item
+                    ? `${deletingItem.item.room} (${deletingItem.item.start})`
+                    : '',
+              })}
           </p>
         </div>
       </Modal>
+
 
       {/* Global Toast */}
       {toastMsg && (

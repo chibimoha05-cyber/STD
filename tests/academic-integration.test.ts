@@ -18,6 +18,10 @@ import {
   deleteReportAction,
   saveScheduleExceptionAction,
   deleteScheduleExceptionAction,
+  saveSlotAction,
+  deleteSlotAction,
+  saveCourseAction,
+  deleteCourseAction,
   uploadAttachmentAction,
 } from '../src/lib/actions/academic'
 import { setTestClientFactory, resetTestClientFactory } from '../src/lib/actions/attachment-client'
@@ -361,6 +365,63 @@ describe('Server Actions: Security & Publisher Authorization Verification', () =
     }
   })
 
+  it('saveSlotAction enforces publisher authorization and timing validation', async () => {
+    setTestClientFactory(async () => ({
+      auth: {
+        getUser: async () => ({ data: { user: null }, error: new Error('No session') }),
+      },
+    }))
+
+    try {
+      const res = await saveSlotAction({
+        courseId: 'c1',
+        weekday: 0,
+        startTime: '08:30',
+        endTime: '10:00',
+        room: 'قاعة 1',
+        kind: 'lecture',
+      })
+      assert.strictEqual(res.success, false)
+      assert.match(res.error || '', /Unauthorized/i)
+    } finally {
+      resetTestClientFactory()
+    }
+  })
+
+  it('deleteSlotAction enforces valid UUID check', async () => {
+    const res = await deleteSlotAction('not-a-uuid')
+    assert.strictEqual(res.success, false)
+    assert.match(res.error || '', /Invalid slot ID/i)
+  })
+
+  it('saveCourseAction enforces publisher authorization and required fields', async () => {
+    setTestClientFactory(async () => ({
+      auth: {
+        getUser: async () => ({ data: { user: null }, error: new Error('No session') }),
+      },
+    }))
+
+    try {
+      const res = await saveCourseAction({
+        code: 'CS 999',
+        nameAr: 'مادة تجريبية',
+        nameEn: 'Test Course',
+        instructorAr: 'أستاذ',
+        instructorEn: 'Teacher',
+      })
+      assert.strictEqual(res.success, false)
+      assert.match(res.error || '', /Unauthorized/i)
+    } finally {
+      resetTestClientFactory()
+    }
+  })
+
+  it('deleteCourseAction validates course ID presence', async () => {
+    const res = await deleteCourseAction('')
+    assert.strictEqual(res.success, false)
+    assert.match(res.error || '', /Invalid course ID/i)
+  })
+
   it('uploadAttachmentAction enforces file type security and publisher authorization', async () => {
     setTestClientFactory(async () => ({
       auth: {
@@ -382,3 +443,4 @@ describe('Server Actions: Security & Publisher Authorization Verification', () =
     }
   })
 })
+

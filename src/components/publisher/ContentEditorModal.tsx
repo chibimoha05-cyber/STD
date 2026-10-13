@@ -21,6 +21,12 @@ import { useI18n, type SaveItemPayload, type EditorTarget } from '@/lib/i18n/con
 import { uploadAttachmentAction } from '@/lib/actions/academic'
 import { isValidUUID } from '@/lib/utils/uuid'
 
+export type ContentEditorTarget = {
+  kind: 'resource' | 'activity' | 'report'
+  item?: Resource | Activity | Report
+  courseId?: string
+}
+
 export type EditableItem = EditorTarget
 
 interface UploadingFile {
@@ -46,22 +52,23 @@ export function ContentEditorModal({
   onClose,
   onSave,
 }: {
-  target: EditableItem | null
+  target: ContentEditorTarget | null
   courses: Course[]
   onClose: () => void
   onSave: (saved: SaveItemPayload, isNew: boolean) => void
 }) {
   const { t, L } = useI18n()
-  const existing = target?.item
+  const existing = target?.item as Resource | Activity | Report | undefined
 
   const [kind, setKind] = useState<'resource' | 'activity' | 'report'>(
     target?.kind || 'resource'
   )
   const [courseId, setCourseId] = useState(
-    (target as { courseId?: string })?.courseId || existing?.courseId || courses[0]?.id || 'c1'
+    target?.courseId || existing?.courseId || courses[0]?.id || 'c1'
   )
   const [titleAr, setTitleAr] = useState(existing?.title?.ar || '')
   const [titleEn, setTitleEn] = useState(existing?.title?.en || '')
+
   const [resourceType, setResourceType] = useState<ResourceType>(
     (existing as Resource)?.type || 'notes'
   )
