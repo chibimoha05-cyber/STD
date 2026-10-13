@@ -84,6 +84,8 @@ export const dict = {
   previewErrorHint: ['حدث خطأ أثناء جلب الملف. حاول مرة أخرى.', 'Something went wrong fetching the file. Please try again.'],
   retry: ['إعادة المحاولة', 'Retry'],
   close: ['إغلاق', 'Close'],
+  openInNewTab: ['فتح في علامة تبويب جديدة', 'Open in new tab'],
+  mockFileNotice: ['هذا ملف تجريبي افتراضي ضمن البيانات النموذجية.', 'This is a sample mock file from seed data.'],
   page: ['صفحة', 'Page'],
   manage: ['إدارة المحتوى', 'Content management'],
   manageSub: ['أضف المحتوى وعدّله واحذفه، وتحكّم في وصول كل ملف. يمكنك إدارة جميع المنشورات.', 'Add, edit and delete content and control access for each file. You can manage all posts.'],

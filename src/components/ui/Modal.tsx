@@ -16,7 +16,7 @@ export function Modal({
   title: ReactNode
   children: ReactNode
   footer?: ReactNode
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }) {
   useEffect(() => {
     if (!open) return
@@ -33,6 +33,7 @@ export function Modal({
     sm: 'sm:max-w-md',
     md: 'sm:max-w-xl',
     lg: 'sm:max-w-3xl',
+    xl: 'sm:max-w-5xl',
   }[size]
 
   return (

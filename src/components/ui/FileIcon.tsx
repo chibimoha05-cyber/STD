@@ -16,10 +16,10 @@ export const FILE_KINDS: Record<string, { color: string; ar: string; en: string 
 export const kindOf = (name: string) =>
   FILE_KINDS[ext(name)] ?? { color: '#7a8396', ar: 'ملف', en: 'File' }
 
-export function FileIcon({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
+export function FileIcon({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) {
   const e = ext(name)
   const { color } = kindOf(name)
-  const box = size === 'sm' ? 'w-8 h-10' : 'w-10 h-12'
+  const box = size === 'sm' ? 'w-8 h-10' : size === 'lg' ? 'w-12 h-14' : 'w-10 h-12'
 
   return (
     <span className={`relative ${box} shrink-0`} aria-hidden>

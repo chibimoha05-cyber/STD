@@ -40,6 +40,10 @@ export async function GET(
         )
       }
 
+      const isPreview =
+        _request.nextUrl.searchParams.get('preview') === 'true' ||
+        _request.nextUrl.searchParams.get('inline') === 'true'
+
       // Check security classification
       if (attachment.access === 'restricted') {
         const {
@@ -67,12 +71,11 @@ export async function GET(
           )
         }
 
-        // Generate short-lived signed URL (valid for 60 seconds)
+        // Generate signed URL (3600s for inline preview, 60s for download)
+        const signOptions = isPreview ? undefined : { download: attachment.file_name }
         const { data: signedData, error: signError } = await supabase.storage
           .from(attachment.storage_bucket)
-          .createSignedUrl(attachment.storage_path, 60, {
-            download: attachment.file_name,
-          })
+          .createSignedUrl(attachment.storage_path, isPreview ? 3600 : 60, signOptions)
 
         if (signError || !signedData?.signedUrl) {
           return NextResponse.json(
@@ -95,11 +98,10 @@ export async function GET(
         )
       }
 
+      const publicOptions = isPreview ? undefined : { download: attachment.file_name }
       const { data: publicData } = supabase.storage
         .from(attachment.storage_bucket)
-        .getPublicUrl(attachment.storage_path, {
-          download: attachment.file_name,
-        })
+        .getPublicUrl(attachment.storage_path, publicOptions)
 
       return NextResponse.redirect(publicData.publicUrl)
     } catch {
