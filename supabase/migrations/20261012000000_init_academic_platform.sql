@@ -266,7 +266,7 @@ create table if not exists public.attachments (
   constraint chk_attachment_single_parent check (
     (resource_id is not null)::int +
     (activity_id is not null)::int +
-    (report_id is not null)::int = 1
+    (report_id is not null)::int <= 1
   )
 );
 

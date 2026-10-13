@@ -18,7 +18,11 @@ import { FileIcon } from '@/components/ui/FileIcon'
 import { AccessBadge } from '@/components/ui/Badge'
 import { Icon } from '@/components/ui/Icon'
 import { useI18n, type SaveItemPayload, type EditorTarget } from '@/lib/i18n/context'
-import { uploadAttachmentAction } from '@/lib/actions/academic'
+import {
+  uploadAttachmentAction,
+  recordAttachmentMetadataAction,
+} from '@/lib/actions/academic'
+import { createClient } from '@/lib/supabase/client'
 import { isValidUUID } from '@/lib/utils/uuid'
 
 export type ContentEditorTarget = {
@@ -101,7 +105,115 @@ export function ContentEditorModal({
 
   const isNew = !existing
 
+  const sanitizeFileName = (fileName: string): string => {
+    const base = fileName.split(/[/\\]/).pop() || 'file'
+    return base.replace(/[^\w.\- \u0600-\u06FF]/g, '_').trim()
+  }
+
   const uploadSingleFile = async (tempId: string, file: File, access: AccessType) => {
+    const safeAccess: 'public' | 'restricted' = access === 'restricted' ? 'restricted' : 'public'
+    const targetBucket = safeAccess === 'restricted' ? 'attachments-restricted' : 'attachments-public'
+    const sanitized = sanitizeFileName(file.name)
+    const fileUUID =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `f_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    const storagePath = `${safeAccess}/${fileUUID}_${sanitized}`
+
+    // --------------------------------------------------------------------------
+    // Strategy 1: Direct Client-to-Storage Upload (Bypasses Vercel 4.5MB limit)
+    // --------------------------------------------------------------------------
+    try {
+      const supabase = createClient()
+      const { data: uploadData, error: uploadErr } = await supabase.storage
+        .from(targetBucket)
+        .upload(storagePath, file, {
+          contentType: file.type || 'application/octet-stream',
+          upsert: false,
+        })
+
+      if (!uploadErr && uploadData) {
+        // Record attachment metadata via Server Action
+        const recordRes = await recordAttachmentMetadataAction({
+          fileName: file.name,
+          fileSizeBytes: file.size,
+          mimeType: file.type || 'application/octet-stream',
+          access: safeAccess,
+          storageBucket: targetBucket,
+          storagePath,
+        })
+
+        if (recordRes.success && recordRes.data) {
+          setFiles((prev) =>
+            prev.map((item) =>
+              item.id === tempId
+                ? {
+                    id: recordRes.data!.id,
+                    name: recordRes.data!.name,
+                    size: recordRes.data!.size,
+                    access: recordRes.data!.access,
+                    status: 'done' as const,
+                    progress: 100,
+                  }
+                : item
+            )
+          )
+          return
+        }
+
+        // Direct DB insert fallback via client
+        const db = supabase as unknown as {
+          from: (table: string) => {
+            insert: (data: unknown) => {
+              select: (cols: string) => {
+                single: () => Promise<{
+                  data: { id: string; file_name: string; file_size_bytes: number; access: string } | null
+                  error: { message: string } | null
+                }>
+              }
+            }
+          }
+        }
+
+        const { data: directDbRow, error: directDbErr } = await db
+          .from('attachments')
+          .insert({
+            file_name: file.name,
+            file_size_bytes: file.size,
+            mime_type: file.type || 'application/octet-stream',
+            access: safeAccess,
+            storage_bucket: targetBucket,
+            storage_path: storagePath,
+            version: 1,
+          })
+          .select('id, file_name, file_size_bytes, access')
+          .single()
+
+        if (!directDbErr && directDbRow) {
+          setFiles((prev) =>
+            prev.map((item) =>
+              item.id === tempId
+                ? {
+                    id: directDbRow.id,
+                    name: directDbRow.file_name,
+                    size: fmtSize(directDbRow.file_size_bytes),
+                    access: directDbRow.access as AccessType,
+                    status: 'done' as const,
+                    progress: 100,
+                  }
+                : item
+            )
+          )
+          return
+        }
+      }
+    } catch (clientErr) {
+      console.warn('[Direct Upload] Attempt failed, falling back to Server Action:', clientErr)
+    }
+
+    // --------------------------------------------------------------------------
+    // Strategy 2: Server Action Fallback
+    // --------------------------------------------------------------------------
     try {
       const formData = new FormData()
       formData.append('file', file)

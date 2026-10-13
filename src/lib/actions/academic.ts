@@ -777,3 +777,70 @@ export async function uploadAttachmentAction(
     return { success: false, error: `Upload exception: ${msg}` }
   }
 }
+
+export interface RecordAttachmentMetadataInput {
+  fileName: string
+  fileSizeBytes: number
+  mimeType?: string
+  access: 'public' | 'restricted'
+  storageBucket: string
+  storagePath: string
+}
+
+export async function recordAttachmentMetadataAction(
+  input: RecordAttachmentMetadataInput
+): Promise<ActionResult<UploadAttachmentResult>> {
+  const auth = await verifyPublisherAuth()
+  if (!auth.authorized || !auth.supabase) {
+    return { success: false, error: auth.error }
+  }
+
+  const { fileName, fileSizeBytes, mimeType, access, storageBucket, storagePath } = input
+  const safeAccess: 'public' | 'restricted' = access === 'restricted' ? 'restricted' : 'public'
+
+  const db = auth.supabase as unknown as {
+    from: (table: string) => {
+      insert: (data: unknown) => {
+        select: (cols: string) => {
+          single: () => Promise<{
+            data: { id: string; file_name: string; file_size_bytes: number; access: string } | null
+            error: { message: string } | null
+          }>
+        }
+      }
+    }
+  }
+
+  const { data: attachmentRow, error: dbError } = await db
+    .from('attachments')
+    .insert({
+      file_name: fileName,
+      file_size_bytes: fileSizeBytes,
+      mime_type: mimeType || 'application/octet-stream',
+      access: safeAccess,
+      storage_bucket: storageBucket,
+      storage_path: storagePath,
+      version: 1,
+    })
+    .select('id, file_name, file_size_bytes, access')
+    .single()
+
+  if (dbError || !attachmentRow) {
+    return { success: false, error: `Failed to record attachment metadata: ${dbError?.message}` }
+  }
+
+  const kb = attachmentRow.file_size_bytes / 1024
+  const formattedSize =
+    kb < 1024 ? `${Math.round(kb)} KB` : `${(kb / 1024).toFixed(1)} MB`
+
+  return {
+    success: true,
+    data: {
+      id: attachmentRow.id,
+      name: attachmentRow.file_name,
+      size: formattedSize,
+      access: attachmentRow.access as 'public' | 'restricted',
+    },
+  }
+}
+
