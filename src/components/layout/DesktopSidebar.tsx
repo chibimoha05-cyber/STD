@@ -24,48 +24,46 @@ const NAV_ITEMS: NavItem[] = [
 
 export function DesktopSidebar() {
   const pathname = usePathname()
-  const { lang, setLang, dark, toggleTheme, publisher, setPublisher, showToast, t } = useI18n()
+  const { lang, setLang, dark, toggleTheme, publisher, logout, t } = useI18n()
 
   const active = (href: string) => {
     if (href === '/') return pathname === '/'
     return pathname.startsWith(href)
   }
 
-  const Toggle = ({ full }: { full?: boolean }) => (
-    <div className={full ? 'w-full' : ''}>
-      <div className="text-[11px] text-muted mb-1.5 flex items-center gap-1 font-medium">
-        <Icon name="eye" className="size-3.5" />
-        {t('previewMode')}
-      </div>
-      <div className="flex p-1 bg-sunken rounded-xl">
-        {[false, true].map((b) => (
-          <button
-            key={String(b)}
-            type="button"
-            onClick={() => {
-              setPublisher(b)
-              showToast(b ? t('publisherMode') : t('visitor'))
-            }}
-            className={`flex-1 h-8 rounded-lg text-[13px] font-medium inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-              publisher === b
-                ? b
-                  ? 'bg-accent text-white shadow-sm'
-                  : 'bg-surface text-ink shadow-sm'
-                : 'text-muted hover:text-ink'
-            }`}
+  const renderPublisherControl = () => (
+    <div className="w-full">
+      {publisher ? (
+        <div className="p-3 bg-accent-soft rounded-2xl border border-accent/20 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-accent-ink">
+            <span className="flex items-center gap-1.5">
+              <Icon name="shield" className="size-4" />
+              <span>{t('publisherMode')}</span>
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon="x"
+            onClick={logout}
+            className="w-full !justify-start text-xs hover:!text-danger"
           >
-            <Icon name={b ? 'shield' : 'globe'} className="size-4" />
-            {t(b ? 'publisherMode' : 'visitor')}
-          </button>
-        ))}
-      </div>
-      <p className="text-[11px] text-muted mt-1.5 leading-snug">
-        {t('prototypeNote')}
-      </p>
+            {t('logout')}
+          </Button>
+        </div>
+      ) : (
+        <Link
+          href="/publisher/login"
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-muted hover:text-ink hover:bg-subtle transition-colors"
+        >
+          <Icon name="shield" className="size-4 text-muted" />
+          <span>{t('publisherLogin')}</span>
+        </Link>
+      )}
     </div>
   )
 
-  const LangBtn = () => (
+  const renderLangBtn = () => (
     <Button
       size="sm"
       icon="globe"
@@ -75,7 +73,7 @@ export function DesktopSidebar() {
     </Button>
   )
 
-  const ThemeBtn = ({ label }: { label?: boolean }) => (
+  const renderThemeBtn = (label?: boolean) => (
     <Button
       size="sm"
       icon={dark ? 'sun' : 'moon'}
@@ -138,12 +136,12 @@ export function DesktopSidebar() {
         )}
       </nav>
 
-      {/* Footer controls: Mode Toggle, Language, Theme */}
+      {/* Footer controls: Publisher control, Language, Theme */}
       <div className="space-y-4 pt-4 border-t border-line">
-        <Toggle />
+        {renderPublisherControl()}
         <div className="flex flex-wrap gap-2">
-          <LangBtn />
-          <ThemeBtn label />
+          {renderLangBtn()}
+          {renderThemeBtn(true)}
         </div>
       </div>
     </aside>

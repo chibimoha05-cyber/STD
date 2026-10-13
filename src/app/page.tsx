@@ -3,10 +3,6 @@
 import React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import {
-  initialCourses,
-  initialSlots,
-} from '@/lib/data/initialData'
 import { getDaySchedule, fmtDate } from '@/lib/utils/schedule'
 import { LectureRow } from '@/components/cards/LectureRow'
 import { ActivityCard } from '@/components/cards/ActivityCard'
@@ -21,12 +17,18 @@ import { useI18n } from '@/lib/i18n/context'
 
 export default function HomePage() {
   const router = useRouter()
-  const { t, lang, L, resources, activities, reports, exceptions } = useI18n()
+  const { t, lang, L, courses, slots, resources, activities, reports, exceptions } = useI18n()
 
-  const courses = initialCourses
-  const slots = initialSlots
-
-  const course = (id: string) => courses.find((c) => c.id === id)!
+  const course = (id: string) =>
+    courses.find((c) => c.id === id) || {
+      id,
+      code: id,
+      name: { ar: id, en: id },
+      instructor: { ar: '', en: '' },
+      color: '#1f3d6b',
+      credits: 0,
+      desc: { ar: '', en: '' },
+    }
 
   const today = getDaySchedule(0, slots, exceptions)
   const todayCourses = new Set(

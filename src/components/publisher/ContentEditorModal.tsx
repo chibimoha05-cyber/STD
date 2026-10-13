@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef } from 'react'
 import type {
   Course,
   Resource,
@@ -8,7 +8,6 @@ import type {
   Report,
   ResourceType,
   ReportCategory,
-  FileItem,
   AccessType,
 } from '@/lib/data/initialData'
 import { Modal } from '@/components/ui/Modal'
@@ -18,12 +17,11 @@ import { Field } from '@/components/ui/Select'
 import { FileIcon } from '@/components/ui/FileIcon'
 import { AccessBadge } from '@/components/ui/Badge'
 import { Icon } from '@/components/ui/Icon'
-import { useI18n } from '@/lib/i18n/context'
+import { useI18n, type SaveItemPayload, type EditorTarget } from '@/lib/i18n/context'
+import { uploadAttachmentAction } from '@/lib/actions/academic'
+import { isValidUUID } from '@/lib/utils/uuid'
 
-export type EditableItem =
-  | { kind: 'resource'; item?: Resource }
-  | { kind: 'activity'; item?: Activity }
-  | { kind: 'report'; item?: Report }
+export type EditableItem = EditorTarget
 
 interface UploadingFile {
   id: string
@@ -32,6 +30,7 @@ interface UploadingFile {
   access: AccessType
   status: 'uploading' | 'done' | 'failed'
   progress: number
+  rawFile?: File
 }
 
 const fmtSize = (bytes: number) => {
@@ -50,7 +49,7 @@ export function ContentEditorModal({
   target: EditableItem | null
   courses: Course[]
   onClose: () => void
-  onSave: (saved: any, isNew: boolean) => void
+  onSave: (saved: SaveItemPayload, isNew: boolean) => void
 }) {
   const { t, L } = useI18n()
   const existing = target?.item
@@ -59,7 +58,7 @@ export function ContentEditorModal({
     target?.kind || 'resource'
   )
   const [courseId, setCourseId] = useState(
-    existing?.courseId || courses[0]?.id || 'c1'
+    (target as { courseId?: string })?.courseId || existing?.courseId || courses[0]?.id || 'c1'
   )
   const [titleAr, setTitleAr] = useState(existing?.title?.ar || '')
   const [titleEn, setTitleEn] = useState(existing?.title?.en || '')
@@ -82,71 +81,132 @@ export function ContentEditorModal({
       name: f.name,
       size: f.size,
       access: f.access,
-      status: 'done',
+      status: 'done' as const,
       progress: 100,
     }))
   )
 
   const [dragActive, setDragActive] = useState(false)
-  const [simulateFail, setSimulateFail] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const timersRef = useRef<number[]>([])
-
-  useEffect(() => {
-    return () => timersRef.current.forEach(clearInterval)
-  }, [])
 
   if (!target) return null
 
   const isNew = !existing
 
-  const simulateUpload = (fileId: string, shouldFail: boolean) => {
-    const timer = window.setInterval(() => {
+  const uploadSingleFile = async (tempId: string, file: File, access: AccessType) => {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('access', access)
+
+      const res = await uploadAttachmentAction(formData)
+      if (res.success && res.data) {
+        setFiles((prev) =>
+          prev.map((item) =>
+            item.id === tempId
+              ? {
+                  id: res.data!.id,
+                  name: res.data!.name,
+                  size: res.data!.size,
+                  access: res.data!.access,
+                  status: 'done' as const,
+                  progress: 100,
+                }
+              : item
+          )
+        )
+      } else {
+        setFiles((prev) =>
+          prev.map((item) =>
+            item.id === tempId
+              ? { ...item, status: 'failed' as const, progress: 0 }
+              : item
+          )
+        )
+      }
+    } catch {
       setFiles((prev) =>
-        prev.map((f) => {
-          if (f.id !== fileId || f.status !== 'uploading') return f
-          const nextProgress = f.progress + 15 + Math.random() * 20
-          if (shouldFail && nextProgress > 50) {
-            clearInterval(timer)
-            return { ...f, status: 'failed', progress: 50 }
-          }
-          if (nextProgress >= 100) {
-            clearInterval(timer)
-            return { ...f, status: 'done', progress: 100 }
-          }
-          return { ...f, progress: nextProgress }
-        })
+        prev.map((item) =>
+          item.id === tempId
+            ? { ...item, status: 'failed' as const, progress: 0 }
+            : item
+        )
       )
-    }, 180)
-    timersRef.current.push(timer)
+    }
   }
 
-  const handleFilesAdded = (fileList: FileList | null) => {
-    if (!fileList) return
-    const newItems: UploadingFile[] = Array.from(fileList).map((f, i) => ({
-      id: 'up_' + Date.now() + '_' + i,
-      name: f.name,
-      size: fmtSize(f.size),
-      access: 'public',
-      status: 'uploading',
-      progress: 0,
-    }))
+  const handleFilesAdded = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return
+    const incoming = Array.from(fileList)
 
-    setFiles((prev) => [...prev, ...newItems])
-    newItems.forEach((f, index) => {
-      simulateUpload(f.id, simulateFail && index === 0)
-    })
-    setSimulateFail(false)
+    for (let i = 0; i < incoming.length; i++) {
+      const f = incoming[i]
+      const tempId = `temp_${Date.now()}_${i}`
+      const initialItem: UploadingFile = {
+        id: tempId,
+        name: f.name,
+        size: fmtSize(f.size),
+        access: 'public',
+        status: 'uploading',
+        progress: 50,
+        rawFile: f,
+      }
+
+      setFiles((prev) => [...prev, initialItem])
+      await uploadSingleFile(tempId, f, 'public')
+    }
   }
 
   const handleRetry = (fileId: string) => {
+    const targetFile = files.find((f) => f.id === fileId)
+    if (!targetFile || !targetFile.rawFile) return
+
     setFiles((prev) =>
       prev.map((f) =>
-        f.id === fileId ? { ...f, status: 'uploading', progress: 0 } : f
+        f.id === fileId ? { ...f, status: 'uploading' as const, progress: 40 } : f
       )
     )
-    simulateUpload(fileId, false)
+    uploadSingleFile(fileId, targetFile.rawFile, targetFile.access)
+  }
+
+  const handleToggleAccess = async (fileId: string, currentAccess: AccessType) => {
+    const nextAccess: AccessType = currentAccess === 'public' ? 'restricted' : 'public'
+    setFiles((prev) =>
+      prev.map((x) => (x.id === fileId ? { ...x, access: nextAccess } : x))
+    )
+
+    if (isValidUUID(fileId)) {
+      try {
+        const res = await fetch(`/api/attachments/${fileId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ access: nextAccess }),
+        })
+        if (!res.ok) {
+          // Revert if API rejected
+          setFiles((prev) =>
+            prev.map((x) => (x.id === fileId ? { ...x, access: currentAccess } : x))
+          )
+        }
+      } catch {
+        setFiles((prev) =>
+          prev.map((x) => (x.id === fileId ? { ...x, access: currentAccess } : x))
+        )
+      }
+    }
+  }
+
+  const handleRemoveFile = async (fileId: string) => {
+    setFiles((prev) => prev.filter((x) => x.id !== fileId))
+
+    if (isValidUUID(fileId)) {
+      try {
+        await fetch(`/api/attachments/${fileId}`, { method: 'DELETE' })
+      } catch {
+        // Handled silently
+      }
+    }
   }
 
   const handleSave = () => {
@@ -158,20 +218,22 @@ export function ContentEditorModal({
     setErrors(errs)
     if (Object.keys(errs).length > 0) return
 
+    const doneFiles = files.filter((f) => f.status === 'done')
+    const attachmentIds = doneFiles.map((f) => f.id)
+
     const baseData = {
-      id: existing?.id || 'n_' + Date.now(),
+      id: existing?.id,
       courseId,
-      title: { ar: titleAr, en: titleEn },
-      files: files.map(({ id, name, size, access }) => ({ id, name, size, access })),
+      title: { ar: titleAr.trim(), en: titleEn.trim() },
+      files: doneFiles.map(({ id, name, size, access }) => ({ id, name, size, access })),
     }
 
-    let payload: any = baseData
+    let payload: SaveItemPayload['item'] = baseData
 
     if (kind === 'resource') {
       payload = {
         ...baseData,
         type: resourceType,
-        date: (existing as Resource)?.date ?? 0,
       }
     } else if (kind === 'activity') {
       payload = {
@@ -186,12 +248,11 @@ export function ContentEditorModal({
       payload = {
         ...baseData,
         category: reportCat,
-        date: (existing as Report)?.date ?? 0,
         author: (existing as Report)?.author || { ar: 'الناشر', en: 'Publisher' },
       }
     }
 
-    onSave({ kind, item: payload }, isNew)
+    onSave({ kind, item: payload, attachmentIds }, isNew)
   }
 
   const resourceTypes: ResourceType[] = ['notes', 'summary', 'source', 'prep', 'pastExam', 'other']
@@ -216,10 +277,10 @@ export function ContentEditorModal({
         <Select
           label={t('contentKind')}
           value={kind}
-          onChange={(v) => isNew && setKind(v as any)}
+          onChange={(v) => isNew && setKind(v as 'resource' | 'activity' | 'report')}
           options={[
             { value: 'resource', label: t('resource') },
-            { value: 'activity', label: `${t('exam')} / ${t('assignment')}` },
+            { value: 'activity', label: t('activity') },
             { value: 'report', label: t('report') },
           ]}
         />
@@ -231,35 +292,38 @@ export function ContentEditorModal({
           onChange={setCourseId}
           options={courses.map((c) => ({
             value: c.id,
-            label: `${c.code} — ${L(c.name)}`,
+            label: `${c.code} · ${L(c.name)}`,
           }))}
         />
 
-        {/* Arabic Title */}
+        {/* Title AR */}
         <Field
           label={t('titleAr')}
-          dir="rtl"
           value={titleAr}
           onChange={setTitleAr}
+          placeholder="مثال: هياكل البيانات – المحاضرة 1"
           error={errors.titleAr}
         />
 
-        {/* English Title */}
+        {/* Title EN */}
         <Field
           label={t('titleEn')}
-          dir="ltr"
           value={titleEn}
           onChange={setTitleEn}
+          placeholder="e.g. Data Structures – Lecture 1"
           error={errors.titleEn}
         />
 
-        {/* Resource specific category */}
+        {/* Resource specific type */}
         {kind === 'resource' && (
           <Select
             label={t('resourceType')}
             value={resourceType}
             onChange={(v) => setResourceType(v as ResourceType)}
-            options={resourceTypes.map((r) => ({ value: r, label: t(r) }))}
+            options={resourceTypes.map((r) => ({
+              value: r,
+              label: t(r),
+            }))}
           />
         )}
 
@@ -283,7 +347,7 @@ export function ContentEditorModal({
             <Select
               label={t('type')}
               value={activityKind}
-              onChange={(v) => setActivityKind(v as any)}
+              onChange={(v) => setActivityKind(v as 'exam' | 'assignment')}
               options={[
                 { value: 'exam', label: t('exam') },
                 { value: 'assignment', label: t('assignment') },
@@ -321,15 +385,6 @@ export function ContentEditorModal({
           <span className="text-sm font-semibold text-ink">
             {t('attachments')}
           </span>
-          <label className="inline-flex items-center gap-2 text-xs text-muted cursor-pointer">
-            <input
-              type="checkbox"
-              checked={simulateFail}
-              onChange={(e) => setSimulateFail(e.target.checked)}
-              className="accent-danger"
-            />
-            <span>{t('simulateFail')}</span>
-          </label>
         </div>
 
         {/* Dropzone */}
@@ -428,21 +483,7 @@ export function ContentEditorModal({
                       </span>
                       <button
                         type="button"
-                        onClick={() =>
-                          setFiles((prev) =>
-                            prev.map((x) =>
-                              x.id === f.id
-                                ? {
-                                    ...x,
-                                    access:
-                                      x.access === 'public'
-                                        ? 'restricted'
-                                        : 'public',
-                                  }
-                                : x
-                            )
-                          )
-                        }
+                        onClick={() => handleToggleAccess(f.id, f.access)}
                         title={t('access')}
                         className="cursor-pointer"
                       >
@@ -467,9 +508,7 @@ export function ContentEditorModal({
                     icon="x"
                     title={t('remove')}
                     className="!px-2"
-                    onClick={() =>
-                      setFiles((prev) => prev.filter((x) => x.id !== f.id))
-                    }
+                    onClick={() => handleRemoveFile(f.id)}
                   />
                 </div>
 
@@ -477,7 +516,7 @@ export function ContentEditorModal({
                   <div className="h-1 bg-sunken rounded-full mt-2.5 overflow-hidden">
                     <div
                       className="h-full bg-brand transition-all"
-                      style={{ width: f.progress + '%' }}
+                      style={{ width: `${f.progress}%` }}
                     />
                   </div>
                 )}

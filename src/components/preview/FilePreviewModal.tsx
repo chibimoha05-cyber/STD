@@ -25,9 +25,14 @@ export function FilePreviewModal({
   const canPublish = isPublisher ?? publisher
   const locked = file ? file.access === 'restricted' && !canPublish : false
 
+  const [prevFileId, setPrevFileId] = useState<string | null>(file?.id ?? null)
+  if (file && file.id !== prevFileId) {
+    setPrevFileId(file.id)
+    setState('loading')
+  }
+
   useEffect(() => {
     if (!file) return
-    setState('loading')
     const h = setTimeout(
       () => setState(file.broken && attempt === 0 ? 'error' : 'ok'),
       700
@@ -38,7 +43,12 @@ export function FilePreviewModal({
   if (!file) return null
 
   const handleDownload = () => {
-    window.location.href = `/api/attachments/${file.id}/download`
+    const a = document.createElement('a')
+    a.href = `/api/attachments/${file.id}/download`
+    a.download = file.name
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
   return (

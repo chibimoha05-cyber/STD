@@ -87,14 +87,6 @@ export const dayFrom = (offset: number) => {
   return d
 }
 
-let fileCount = 0
-const f = (name: string, size: string, access: AccessType = 'public', broken = false): FileItem => ({
-  id: 'f' + ++fileCount,
-  name,
-  size,
-  access,
-  broken,
-})
 
 export const initialCourses: Course[] = [
   {

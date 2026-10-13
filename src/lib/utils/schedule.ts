@@ -1,7 +1,5 @@
 import {
   dayFrom,
-  type Course,
-  type FileItem,
   type ScheduleException,
   type Slot,
 } from '@/lib/data/initialData'

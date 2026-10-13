@@ -10,14 +10,14 @@ import { useI18n } from '@/lib/i18n/context'
 
 export function MobileBottomNav() {
   const pathname = usePathname()
-  const { lang, setLang, dark, toggleTheme, publisher, setPublisher, showToast, t } = useI18n()
+  const { lang, setLang, dark, toggleTheme, publisher, logout, t } = useI18n()
   const [moreOpen, setMoreOpen] = useState(false)
 
   const tabs = [
     { href: '/', icon: 'home', label: t('home') },
     { href: '/schedule', icon: 'calendar', label: t('schedule') },
     { href: '/courses', icon: 'book', label: t('courses') },
-    { href: '/activities', icon: 'clipboard', label: `${t('exam')} / ${t('assignment')}` },
+    { href: `${'/activities'}`, icon: 'clipboard', label: `${t('exam')} / ${t('assignment')}` },
   ]
 
   const isActive = (href: string) => {
@@ -30,37 +30,39 @@ export function MobileBottomNav() {
     pathname.startsWith('/search') ||
     pathname.startsWith('/publisher')
 
-  const Toggle = () => (
-    <div>
-      <div className="text-[11px] text-muted mb-1.5 flex items-center gap-1 font-medium">
-        <Icon name="eye" className="size-3.5" />
-        {t('previewMode')}
-      </div>
-      <div className="flex p-1 bg-sunken rounded-xl">
-        {[false, true].map((b) => (
-          <button
-            key={String(b)}
-            type="button"
+  const renderPublisherControl = () => (
+    <div className="w-full">
+      {publisher ? (
+        <div className="p-3 bg-accent-soft rounded-2xl border border-accent/20 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-accent-ink">
+            <span className="flex items-center gap-1.5">
+              <Icon name="shield" className="size-4" />
+              <span>{t('publisherMode')}</span>
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon="x"
             onClick={() => {
-              setPublisher(b)
-              showToast(b ? t('publisherMode') : t('visitor'))
+              setMoreOpen(false)
+              logout()
             }}
-            className={`flex-1 h-8 rounded-lg text-[13px] font-medium inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-              publisher === b
-                ? b
-                  ? 'bg-accent text-white shadow-sm font-semibold'
-                  : 'bg-surface text-ink shadow-sm font-semibold'
-                : 'text-muted hover:text-ink'
-            }`}
+            className="w-full !justify-start text-xs hover:!text-danger"
           >
-            <Icon name={b ? 'shield' : 'globe'} className="size-4" />
-            <span>{t(b ? 'publisherMode' : 'visitor')}</span>
-          </button>
-        ))}
-      </div>
-      <p className="text-[11px] text-muted mt-1.5 leading-snug">
-        {t('prototypeNote')}
-      </p>
+            {t('logout')}
+          </Button>
+        </div>
+      ) : (
+        <Link
+          href="/publisher/login"
+          onClick={() => setMoreOpen(false)}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium text-muted hover:text-ink hover:bg-subtle transition-colors"
+        >
+          <Icon name="shield" className="size-4 text-muted" />
+          <span>{t('publisherLogin')}</span>
+        </Link>
+      )}
     </div>
   )
 
@@ -132,7 +134,7 @@ export function MobileBottomNav() {
         </div>
 
         <div className="pt-4 border-t border-line space-y-4">
-          <Toggle />
+          {renderPublisherControl()}
 
           <div className="flex items-center gap-2">
             <Button

@@ -9,8 +9,7 @@ import { ContentEditorModal } from '@/components/publisher/ContentEditorModal'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
-import { initialCourses } from '@/lib/data/initialData'
-import { useI18n } from '@/lib/i18n/context'
+import { useI18n, type SaveItemPayload } from '@/lib/i18n/context'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const {
@@ -23,24 +22,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setDeletingItem,
     toastMsg,
     showToast,
+    courses,
     t,
     L,
     saveItem,
     removeItem,
   } = useI18n()
 
-  const handleSave = (saved: any, isNew: boolean) => {
-    saveItem(saved, isNew)
-    setEditorTarget(null)
-    showToast(t(isNew ? 'published' : 'saved'))
+  const handleSave = async (saved: SaveItemPayload, isNew: boolean) => {
+    const res = await saveItem(saved, isNew)
+    if (res.success) {
+      setEditorTarget(null)
+      showToast(t(isNew ? 'published' : 'saved'))
+    } else {
+      showToast(res.error || t('failed'))
+    }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deletingItem) {
-      removeItem(deletingItem)
+      const res = await removeItem(deletingItem)
+      if (res.success) {
+        showToast(t('deleted'))
+      } else {
+        showToast(res.error || t('failed'))
+      }
     }
     setDeletingItem(null)
-    showToast(t('deleted'))
   }
 
   return (
@@ -52,9 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {publisher && (
           <div className="hidden lg:flex items-center gap-2 bg-accent-soft text-accent-ink text-[13px] px-8 h-9 border-b border-warn-line font-medium">
             <Icon name="shield" className="size-4" />
-            <span>
-              {t('publisherMode')} — {t('prototypeNote')}
-            </span>
+            <span>{t('publisherMode')}</span>
           </div>
         )}
 
@@ -75,8 +81,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Global Content Editor Modal */}
       {editorTarget && (
         <ContentEditorModal
-          target={editorTarget as any}
-          courses={initialCourses}
+          target={editorTarget}
+          courses={courses}
           onClose={() => setEditorTarget(null)}
           onSave={handleSave}
         />

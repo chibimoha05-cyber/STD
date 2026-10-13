@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+academic_platform_last_conversation.md
 
 # debug
 npm-debug.log*

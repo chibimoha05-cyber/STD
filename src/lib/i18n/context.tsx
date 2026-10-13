@@ -8,8 +8,11 @@ import React, {
   useMemo,
   useCallback,
 } from 'react'
-import { dict, locale, tr, type Key, type Lang } from './dict'
+import { useRouter } from 'next/navigation'
+import { locale, tr, type Key, type Lang } from './dict'
 import type {
+  Course,
+  Slot,
   FileItem,
   Resource,
   Activity,
@@ -17,11 +20,21 @@ import type {
   ScheduleException,
 } from '@/lib/data/initialData'
 import {
-  initialResources,
-  initialActivities,
-  initialReports,
-  initialExceptions,
+  initialCourses,
+  initialSlots,
 } from '@/lib/data/initialData'
+import {
+  fetchFullPlatformData,
+} from '@/lib/data/academic'
+import {
+  saveResourceAction,
+  deleteResourceAction,
+  saveActivityAction,
+  deleteActivityAction,
+  saveReportAction,
+  deleteReportAction,
+} from '@/lib/actions/academic'
+import { createClient } from '@/lib/supabase/client'
 
 export type LocalizedString = { ar: string; en: string }
 
@@ -32,8 +45,27 @@ export type EditableItem =
 
 export type EditorTarget = {
   kind: 'resource' | 'activity' | 'report'
-  item?: any
+  item?: Resource | Activity | Report
   courseId?: string
+}
+
+export interface SaveItemPayload {
+  kind: 'resource' | 'activity' | 'report'
+  item: {
+    id?: string
+    courseId: string
+    title: { ar: string; en: string }
+    type?: string
+    kind?: string
+    category?: string
+    due?: number
+    time?: string
+    place?: { ar: string; en: string }
+    desc?: { ar: string; en: string }
+    author?: { ar: string; en: string }
+    files?: FileItem[]
+  }
+  attachmentIds?: string[]
 }
 
 interface I18nContextType {
@@ -47,6 +79,7 @@ interface I18nContextType {
   locale: string
   publisher: boolean
   setPublisher: (p: boolean) => void
+  logout: () => Promise<void>
   previewFile: FileItem | null
   setPreviewFile: (f: FileItem | null) => void
   editorTarget: EditorTarget | null
@@ -56,7 +89,9 @@ interface I18nContextType {
   toastMsg: string | null
   showToast: (m: string) => void
 
-  // Central platform content state
+  // Platform content state
+  courses: Course[]
+  slots: Slot[]
   resources: Resource[]
   setResources: React.Dispatch<React.SetStateAction<Resource[]>>
   activities: Activity[]
@@ -66,8 +101,11 @@ interface I18nContextType {
   exceptions: ScheduleException[]
   setExceptions: React.Dispatch<React.SetStateAction<ScheduleException[]>>
 
-  saveItem: (entry: { kind: 'resource' | 'activity' | 'report'; item: any }, isNew: boolean) => void
-  removeItem: (entry: EditableItem) => void
+  loadingData: boolean
+  refreshData: () => Promise<void>
+
+  saveItem: (entry: SaveItemPayload, isNew: boolean) => Promise<{ success: boolean; error?: string }>
+  removeItem: (entry: EditableItem) => Promise<{ success: boolean; error?: string }>
 }
 
 const I18nContext = createContext<I18nContextType | null>(null)
@@ -79,126 +117,238 @@ export function I18nProvider({
   children: React.ReactNode
   initialLang?: Lang
 }) {
-  const [lang, setLangState] = useState<Lang>(initialLang)
-  const [dark, setDarkState] = useState(false)
+  const router = useRouter()
+  const [lang, setLangState] = useState<Lang>(() => {
+    if (typeof window !== 'undefined') {
+      const savedLang = localStorage.getItem('app_lang') as Lang | null
+      if (savedLang === 'ar' || savedLang === 'en') {
+        return savedLang
+      }
+    }
+    return initialLang
+  })
+  const [dark, setDarkState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('app_theme')
+      if (savedTheme) {
+        return savedTheme === 'dark'
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches
+    }
+    return false
+  })
   const [publisher, setPublisherState] = useState(false)
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null)
   const [editorTarget, setEditorTarget] = useState<EditorTarget | null>(null)
   const [deletingItem, setDeletingItem] = useState<EditableItem | null>(null)
   const [toastMsg, setToastMsg] = useState<string | null>(null)
-  const [mounted, setMounted] = useState(false)
 
-  // Real items state initialized empty (zero dummy content)
-  const [resources, setResources] = useState<Resource[]>(initialResources)
-  const [activities, setActivities] = useState<Activity[]>(initialActivities)
-  const [reports, setReports] = useState<Report[]>(initialReports)
-  const [exceptions, setExceptions] = useState<ScheduleException[]>(initialExceptions)
+  // Real database items state
+  const [courses, setCourses] = useState<Course[]>(initialCourses)
+  const [slots, setSlots] = useState<Slot[]>(initialSlots)
+  const [resources, setResources] = useState<Resource[]>([])
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [reports, setReports] = useState<Report[]>([])
+  const [exceptions, setExceptions] = useState<ScheduleException[]>([])
+  const [loadingData, setLoadingData] = useState(true)
 
   const showToast = useCallback((msg: string) => {
     setToastMsg(msg)
     window.setTimeout(() => setToastMsg(null), 2600)
   }, [])
 
-  useEffect(() => {
-    const savedLang = localStorage.getItem('app_lang') as Lang | null
-    if (savedLang && (savedLang === 'ar' || savedLang === 'en')) {
-      setLangState(savedLang)
-    }
-
-    const savedTheme = localStorage.getItem('app_theme')
-    if (savedTheme) {
-      setDarkState(savedTheme === 'dark')
-    } else {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      setDarkState(prefersDark)
-    }
-
-    const savedPub = localStorage.getItem('app_publisher')
-    if (savedPub === 'true') {
-      setPublisherState(true)
-    }
-
-    // Load real persistent resources / activities / reports from localStorage
+  const refreshData = useCallback(async () => {
     try {
-      const r = localStorage.getItem('app_real_resources')
-      if (r) setResources(JSON.parse(r))
-      const a = localStorage.getItem('app_real_activities')
-      if (a) setActivities(JSON.parse(a))
-      const rep = localStorage.getItem('app_real_reports')
-      if (rep) setReports(JSON.parse(rep))
-      const ex = localStorage.getItem('app_real_exceptions')
-      if (ex) setExceptions(JSON.parse(ex))
-    } catch (_) {}
-
-    // Clean up any legacy dummy keys if present
-    localStorage.removeItem('app_dummy_seeded')
-
-    setMounted(true)
+      const data = await fetchFullPlatformData()
+      if (data.courses.length > 0) setCourses(data.courses)
+      if (data.slots.length > 0) setSlots(data.slots)
+      setResources(data.resources)
+      setActivities(data.activities)
+      setReports(data.reports)
+      setExceptions(data.exceptions)
+    } catch (err) {
+      console.error('[I18nProvider] Failed to refresh academic data:', err)
+    } finally {
+      setLoadingData(false)
+    }
   }, [])
 
-  // Persist real items on changes
-  useEffect(() => {
-    if (!mounted) return
+  // Check publisher authentication status from Supabase
+  const checkPublisherStatus = useCallback(async () => {
     try {
-      localStorage.setItem('app_real_resources', JSON.stringify(resources))
-    } catch (_) {}
-  }, [resources, mounted])
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        setPublisherState(false)
+        return
+      }
+
+      const { data: pubData, error } = await supabase
+        .from('publishers')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (!error && pubData) {
+        setPublisherState(true)
+      } else {
+        setPublisherState(false)
+      }
+    } catch {
+      setPublisherState(false)
+    }
+  }, [])
+
+  const logout = useCallback(async () => {
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      setPublisherState(false)
+      showToast(tr(lang, 'visitor'))
+      router.push('/')
+    } catch (err) {
+      console.error('[I18nProvider] SignOut error:', err)
+    }
+  }, [lang, router, showToast])
 
   useEffect(() => {
-    if (!mounted) return
-    try {
-      localStorage.setItem('app_real_activities', JSON.stringify(activities))
-    } catch (_) {}
-  }, [activities, mounted])
+    let active = true
 
-  useEffect(() => {
-    if (!mounted) return
-    try {
-      localStorage.setItem('app_real_reports', JSON.stringify(reports))
-    } catch (_) {}
-  }, [reports, mounted])
+    const loadInitialState = async () => {
+      try {
+        const data = await fetchFullPlatformData()
+        if (active) {
+          if (data.courses.length > 0) setCourses(data.courses)
+          if (data.slots.length > 0) setSlots(data.slots)
+          setResources(data.resources)
+          setActivities(data.activities)
+          setReports(data.reports)
+          setExceptions(data.exceptions)
+          setLoadingData(false)
+        }
+      } catch (err) {
+        console.error('[I18nProvider] Initial load error:', err)
+      }
 
-  useEffect(() => {
-    if (!mounted) return
-    try {
-      localStorage.setItem('app_real_exceptions', JSON.stringify(exceptions))
-    } catch (_) {}
-  }, [exceptions, mounted])
+      if (active) {
+        await checkPublisherStatus()
+      }
+    }
+
+    void loadInitialState()
+
+    // Listen to Supabase auth state changes
+    const supabase = createClient()
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      checkPublisherStatus()
+    })
+
+    return () => {
+      active = false
+      subscription.unsubscribe()
+    }
+  }, [checkPublisherStatus])
 
   const saveItem = useCallback(
-    (entry: { kind: 'resource' | 'activity' | 'report'; item: any }, isNew: boolean) => {
-      if (entry.kind === 'resource') {
-        setResources((prev) =>
-          isNew
-            ? [entry.item, ...prev]
-            : prev.map((x) => (x.id === entry.item.id ? entry.item : x))
-        )
-      } else if (entry.kind === 'activity') {
-        setActivities((prev) =>
-          isNew
-            ? [entry.item, ...prev]
-            : prev.map((x) => (x.id === entry.item.id ? entry.item : x))
-        )
-      } else if (entry.kind === 'report') {
-        setReports((prev) =>
-          isNew
-            ? [entry.item, ...prev]
-            : prev.map((x) => (x.id === entry.item.id ? entry.item : x))
-        )
+    async (
+      entry: SaveItemPayload,
+      isNew: boolean
+    ): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const attachmentIds = entry.attachmentIds || entry.item.files?.map((f) => f.id) || []
+
+        if (entry.kind === 'resource') {
+          const res = await saveResourceAction({
+            id: isNew ? undefined : entry.item.id,
+            courseId: entry.item.courseId,
+            type: (entry.item.type as Resource['type']) || 'notes',
+            titleAr: entry.item.title.ar,
+            titleEn: entry.item.title.en,
+            attachmentIds,
+          })
+
+          if (!res.success) {
+            return { success: false, error: res.error }
+          }
+        } else if (entry.kind === 'activity') {
+          const today = new Date()
+          const dueOffsetDays = entry.item.due ?? 3
+          const dueDateObj = new Date(today.getTime() + dueOffsetDays * 86400000)
+          const dueDateStr = dueDateObj.toISOString().split('T')[0]
+
+          const res = await saveActivityAction({
+            id: isNew ? undefined : entry.item.id,
+            courseId: entry.item.courseId,
+            kind: (entry.item.kind as Activity['kind']) || 'exam',
+            titleAr: entry.item.title.ar,
+            titleEn: entry.item.title.en,
+            dueDate: dueDateStr,
+            dueTime: entry.item.time || '23:59',
+            placeAr: entry.item.place?.ar,
+            placeEn: entry.item.place?.en,
+            descAr: entry.item.desc?.ar,
+            descEn: entry.item.desc?.en,
+            attachmentIds,
+          })
+
+          if (!res.success) {
+            return { success: false, error: res.error }
+          }
+        } else if (entry.kind === 'report') {
+          const res = await saveReportAction({
+            id: isNew ? undefined : entry.item.id,
+            courseId: entry.item.courseId,
+            category: (entry.item.category as Report['category']) || 'course',
+            titleAr: entry.item.title.ar,
+            titleEn: entry.item.title.en,
+            authorAr: entry.item.author?.ar,
+            authorEn: entry.item.author?.en,
+            attachmentIds,
+          })
+
+          if (!res.success) {
+            return { success: false, error: res.error }
+          }
+        }
+
+        await refreshData()
+        return { success: true }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Unknown save error'
+        return { success: false, error: errorMsg }
       }
     },
-    []
+    [refreshData]
   )
 
-  const removeItem = useCallback((entry: EditableItem) => {
-    if (entry.kind === 'resource') {
-      setResources((prev) => prev.filter((x) => x.id !== entry.item.id))
-    } else if (entry.kind === 'activity') {
-      setActivities((prev) => prev.filter((x) => x.id !== entry.item.id))
-    } else if (entry.kind === 'report') {
-      setReports((prev) => prev.filter((x) => x.id !== entry.item.id))
-    }
-  }, [])
+  const removeItem = useCallback(
+    async (entry: EditableItem): Promise<{ success: boolean; error?: string }> => {
+      try {
+        if (entry.kind === 'resource') {
+          const res = await deleteResourceAction(entry.item.id)
+          if (!res.success) return { success: false, error: res.error }
+        } else if (entry.kind === 'activity') {
+          const res = await deleteActivityAction(entry.item.id)
+          if (!res.success) return { success: false, error: res.error }
+        } else if (entry.kind === 'report') {
+          const res = await deleteReportAction(entry.item.id)
+          if (!res.success) return { success: false, error: res.error }
+        }
+
+        await refreshData()
+        return { success: true }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Unknown delete error'
+        return { success: false, error: errorMsg }
+      }
+    },
+    [refreshData]
+  )
 
   const setLang = useCallback((newLang: Lang) => {
     setLangState(newLang)
@@ -215,7 +365,6 @@ export function I18nProvider({
 
   const setPublisher = useCallback((p: boolean) => {
     setPublisherState(p)
-    localStorage.setItem('app_publisher', p ? 'true' : 'false')
   }, [])
 
   const toggleTheme = useCallback(() => {
@@ -223,11 +372,10 @@ export function I18nProvider({
   }, [dark, setDark])
 
   useEffect(() => {
-    if (!mounted) return
     document.documentElement.lang = lang
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'
     document.documentElement.classList.toggle('dark', dark)
-  }, [lang, dark, mounted])
+  }, [lang, dark])
 
   const t = useCallback(
     (k: Key, vars?: Record<string, string | number>) => {
@@ -256,6 +404,7 @@ export function I18nProvider({
       locale: locale(lang),
       publisher,
       setPublisher,
+      logout,
       previewFile,
       setPreviewFile,
       editorTarget,
@@ -264,6 +413,8 @@ export function I18nProvider({
       setDeletingItem,
       toastMsg,
       showToast,
+      courses,
+      slots,
       resources,
       setResources,
       activities,
@@ -272,6 +423,8 @@ export function I18nProvider({
       setReports,
       exceptions,
       setExceptions,
+      loadingData,
+      refreshData,
       saveItem,
       removeItem,
     }),
@@ -285,6 +438,7 @@ export function I18nProvider({
       toggleTheme,
       publisher,
       setPublisher,
+      logout,
       previewFile,
       setPreviewFile,
       editorTarget,
@@ -293,10 +447,14 @@ export function I18nProvider({
       setDeletingItem,
       toastMsg,
       showToast,
+      courses,
+      slots,
       resources,
       activities,
       reports,
       exceptions,
+      loadingData,
+      refreshData,
       saveItem,
       removeItem,
     ]

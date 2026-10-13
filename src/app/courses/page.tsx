@@ -2,15 +2,13 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { initialCourses } from '@/lib/data/initialData'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { Icon } from '@/components/ui/Icon'
 import { useI18n } from '@/lib/i18n/context'
 
 export default function CoursesPage() {
-  const { t, L, resources } = useI18n()
-  const courses = initialCourses
+  const { t, L, courses, resources } = useI18n()
 
   return (
     <div>

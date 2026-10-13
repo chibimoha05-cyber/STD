@@ -1,23 +1,28 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabaseClient, isTestMode } from '@/lib/actions/attachment-client'
 import type { Tables } from '@/lib/supabase/types'
+import { isValidUUID } from '@/lib/utils/uuid'
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
 
-  if (!id) {
-    return NextResponse.json({ error: 'Attachment ID required' }, { status: 400 })
+  if (!id || !isValidUUID(id)) {
+    return NextResponse.json(
+      { error: 'Invalid attachment ID format. Must be a valid UUID.' },
+      { status: 400 }
+    )
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const isLiveSupabase = supabaseUrl && !supabaseUrl.includes('placeholder')
+  const isConfigured =
+    Boolean(supabaseUrl && !supabaseUrl.includes('placeholder')) || isTestMode()
 
-  if (isLiveSupabase) {
+  if (isConfigured) {
     try {
-      const supabase = await createClient()
+      const supabase = await getSupabaseClient()
 
       // Fetch attachment metadata from database
       const { data, error } = await supabase
@@ -79,7 +84,17 @@ export async function GET(
         return NextResponse.redirect(signedData.signedUrl)
       }
 
-      // Public file
+      // Public file - verify bucket consistency
+      if (attachment.storage_bucket !== 'attachments-public') {
+        console.error(
+          `[Download API] Classification mismatch: access is public but storage_bucket is ${attachment.storage_bucket}`
+        )
+        return NextResponse.json(
+          { error: 'Attachment configuration error' },
+          { status: 500 }
+        )
+      }
+
       const { data: publicData } = supabase.storage
         .from(attachment.storage_bucket)
         .getPublicUrl(attachment.storage_path, {
@@ -95,28 +110,9 @@ export async function GET(
     }
   }
 
-  // Fallback for demo / preview environment before database provisioning
-  const dummyPdfContent = `%PDF-1.4
-1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
-2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
-3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj
-xref
-0 4
-0000000000 65535 f
-0000000009 00000 n
-0000000052 00000 n
-0000000108 00000 n
-trailer<</Size 4/Root 1 0 R>>
-startxref
-178
-%%EOF`
-
-  return new NextResponse(dummyPdfContent, {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="document-${id}.pdf"`,
-      'Cache-Control': 'no-store',
-    },
-  })
+  // Fallback if database service is not configured
+  return NextResponse.json(
+    { error: 'Database service is not configured.' },
+    { status: 503 }
+  )
 }

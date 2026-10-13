@@ -275,7 +275,9 @@ export interface Database {
           access: 'public' | 'restricted'
           storage_bucket: string
           storage_path: string
+          version: number
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
@@ -288,7 +290,9 @@ export interface Database {
           access?: 'public' | 'restricted'
           storage_bucket: string
           storage_path: string
+          version?: number
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -301,12 +305,64 @@ export interface Database {
           access?: 'public' | 'restricted'
           storage_bucket?: string
           storage_path?: string
+          version?: number
           created_at?: string
+          updated_at?: string
         }
       }
+      storage_cleanup_queue: {
+        Row: {
+          id: string
+          attachment_id: string | null
+          storage_bucket: string
+          storage_path: string
+          status: 'pending' | 'processing' | 'completed' | 'failed'
+          attempts: number
+          last_error: string | null
+          created_at: string
+          processed_at: string | null
+        }
+        Insert: {
+          id?: string
+          attachment_id?: string | null
+          storage_bucket: string
+          storage_path: string
+          status?: 'pending' | 'processing' | 'completed' | 'failed'
+          attempts?: number
+          last_error?: string | null
+          created_at?: string
+          processed_at?: string | null
+        }
+        Update: {
+          id?: string
+          attachment_id?: string | null
+          storage_bucket?: string
+          storage_path?: string
+          status?: 'pending' | 'processing' | 'completed' | 'failed'
+          attempts?: number
+          last_error?: string | null
+          created_at?: string
+          processed_at?: string | null
+        }
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      is_publisher: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }
 
 export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
-export type Enums<T extends keyof Database['public']> = never
+export type Enums = never

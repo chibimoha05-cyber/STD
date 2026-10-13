@@ -2,10 +2,6 @@
 
 import React, { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  initialCourses,
-  type FileItem,
-} from '@/lib/data/initialData'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Segmented } from '@/components/ui/Segmented'
 import { Select } from '@/components/ui/Select'
@@ -27,14 +23,21 @@ type Hit = {
 
 export default function SearchPage() {
   const router = useRouter()
-  const { t, L, publisher, setPreviewFile, resources, activities, reports } = useI18n()
+  const { t, L, publisher, setPreviewFile, courses, resources, activities, reports } = useI18n()
   const [q, setQ] = useState('')
   const [type, setType] = useState<'all' | Hit['type']>('all')
   const [cid, setCid] = useState('')
 
-  const courses = initialCourses
-
-  const course = (id: string) => courses.find((c) => c.id === id)!
+  const course = (id: string) =>
+    courses.find((c) => c.id === id) || {
+      id,
+      code: id,
+      name: { ar: id, en: id },
+      instructor: { ar: '', en: '' },
+      color: '#1f3d6b',
+      credits: 0,
+      desc: { ar: '', en: '' },
+    }
 
   const hits = useMemo(() => {
     const s = q.trim().toLowerCase()
@@ -43,9 +46,8 @@ export default function SearchPage() {
       xs.some((x) => x && x.toLowerCase().includes(s))
     const out: Hit[] = []
 
-    courses.forEach(
-      (c) =>
-        m(c.name.ar, c.name.en, c.code) &&
+    courses.forEach((c) => {
+      if (m(c.name.ar, c.name.en, c.code)) {
         out.push({
           id: c.id,
           type: 'course',
@@ -54,10 +56,11 @@ export default function SearchPage() {
           cid: c.id,
           go: () => router.push(`/courses/${c.id}`),
         })
-    )
+      }
+    })
 
     resources.forEach((r) => {
-      m(r.title.ar, r.title.en) &&
+      if (m(r.title.ar, r.title.en)) {
         out.push({
           id: r.id,
           type: 'resource',
@@ -66,9 +69,9 @@ export default function SearchPage() {
           cid: r.courseId,
           go: () => router.push(`/courses/${r.courseId}`),
         })
-      r.files.forEach(
-        (f) =>
-          m(f.name) &&
+      }
+      r.files.forEach((f) => {
+        if (m(f.name)) {
           out.push({
             id: f.id,
             type: 'file',
@@ -80,12 +83,12 @@ export default function SearchPage() {
                 ? router.push(`/courses/${r.courseId}`)
                 : setPreviewFile(f),
           })
-      )
+        }
+      })
     })
 
-    activities.forEach(
-      (a) =>
-        m(a.title.ar, a.title.en) &&
+    activities.forEach((a) => {
+      if (m(a.title.ar, a.title.en)) {
         out.push({
           id: a.id,
           type: a.kind,
@@ -94,11 +97,11 @@ export default function SearchPage() {
           cid: a.courseId,
           go: () => router.push('/activities'),
         })
-    )
+      }
+    })
 
-    reports.forEach(
-      (r) =>
-        m(r.title.ar, r.title.en, r.author.ar, r.author.en) &&
+    reports.forEach((r) => {
+      if (m(r.title.ar, r.title.en, r.author.ar, r.author.en)) {
         out.push({
           id: r.id,
           type: 'report',
@@ -107,7 +110,8 @@ export default function SearchPage() {
           cid: r.courseId,
           go: () => router.push('/reports'),
         })
-    )
+      }
+    })
 
     return out
   }, [q, courses, resources, activities, reports, L, t, router, publisher, setPreviewFile])

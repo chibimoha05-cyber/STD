@@ -54,5 +54,5 @@ values
   ('c11', 4, '10:30', '11:30', 'Hall 4', 'lecture'),
   ('c10', 4, '11:30', '12:30', 'Hall 4', 'lecture'),
   ('c7', 4, '12:30', '14:30', 'Practical G1+G2', 'lab')
-on conflict do nothing;
+on conflict (course_id, weekday, start_time, room) do nothing;
 

@@ -1,11 +1,7 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import {
-  initialCourses,
-  initialSlots,
-  dayFrom,
-} from '@/lib/data/initialData'
+import React, { useState } from 'react'
+import { dayFrom } from '@/lib/data/initialData'
 import { getDaySchedule, fmtDate } from '@/lib/utils/schedule'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Segmented } from '@/components/ui/Segmented'
@@ -17,20 +13,25 @@ import { WeekGrid } from '@/components/schedule/WeekGrid'
 import { useI18n } from '@/lib/i18n/context'
 
 export default function SchedulePage() {
-  const { t, lang, exceptions } = useI18n()
-  const [view, setView] = useState<'day' | 'week'>('day')
+  const { t, lang, courses, slots, exceptions } = useI18n()
+  const [view, setView] = useState<'day' | 'week'>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      return 'week'
+    }
+    return 'day'
+  })
   const [off, setOff] = useState(0)
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
-      setView('week')
+  const findCourse = (id: string) =>
+    courses.find((c) => c.id === id) || {
+      id,
+      code: id,
+      name: { ar: id, en: id },
+      instructor: { ar: '', en: '' },
+      color: '#1f3d6b',
+      credits: 0,
+      desc: { ar: '', en: '' },
     }
-  }, [])
-
-  const courses = initialCourses
-  const slots = initialSlots
-
-  const findCourse = (id: string) => courses.find((c) => c.id === id)!
 
   const list = getDaySchedule(off, slots, exceptions)
   const strip = Array.from({ length: 7 }, (_, i) => off - 3 + i)

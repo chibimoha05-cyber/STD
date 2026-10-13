@@ -116,7 +116,7 @@ export function ActivityCard({
           )}
 
           {expanded && item.files && item.files.length > 0 && (
-            <FilesDrawer files={item.files} />
+            <FilesDrawer files={item.files} onPreview={onPreview} />
           )}
         </div>
       </div>

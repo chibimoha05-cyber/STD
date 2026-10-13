@@ -35,7 +35,12 @@ export function FileRow({
     if (onDownload) {
       onDownload(file)
     } else {
-      window.location.href = `/api/attachments/${file.id}/download`
+      const a = document.createElement('a')
+      a.href = `/api/attachments/${file.id}/download`
+      a.download = file.name
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
     }
   }
 
@@ -127,7 +132,13 @@ export function FileList({
   )
 }
 
-export function FilesDrawer({ files }: { files: FileItem[] }) {
+export function FilesDrawer({
+  files,
+  onPreview,
+}: {
+  files: FileItem[]
+  onPreview?: (f: FileItem) => void
+}) {
   const { t, setPreviewFile } = useI18n()
   const [open, setOpen] = useState(false)
   const count = files.length
@@ -165,7 +176,7 @@ export function FilesDrawer({ files }: { files: FileItem[] }) {
 
       {open && (
         <div className="mt-2 rise">
-          <FileList files={files} onPreview={setPreviewFile} />
+          <FileList files={files} onPreview={onPreview || setPreviewFile} />
         </div>
       )}
     </div>

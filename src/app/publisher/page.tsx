@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState } from 'react'
-import { initialCourses } from '@/lib/data/initialData'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Segmented } from '@/components/ui/Segmented'
 import { Card } from '@/components/ui/Card'
@@ -10,21 +9,22 @@ import { Button } from '@/components/ui/Button'
 import { Empty } from '@/components/ui/Empty'
 import { Icon } from '@/components/ui/Icon'
 import { fmtDate } from '@/lib/utils/schedule'
-import { useI18n } from '@/lib/i18n/context'
+import { useI18n, type EditableItem } from '@/lib/i18n/context'
 
 export default function PublisherDashboardPage() {
   const {
     t,
     L,
     lang,
+    courses,
     resources,
     activities,
     reports,
+    logout,
     setEditorTarget,
     setDeletingItem,
   } = useI18n()
 
-  const courses = initialCourses
   const [activeTab, setActiveTab] = useState<'resource' | 'activity' | 'report'>('resource')
 
   const findCourse = (id: string) => courses.find((c) => c.id === id)
@@ -76,13 +76,23 @@ export default function PublisherDashboardPage() {
         title={t('manage')}
         sub={t('manageSub')}
         actions={
-          <Button
-            variant="primary"
-            icon="plus"
-            onClick={() => setEditorTarget({ kind: activeTab })}
-          >
-            {t('newContent')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              icon="x"
+              onClick={logout}
+              className="hover:!text-danger"
+            >
+              {t('logout')}
+            </Button>
+            <Button
+              variant="primary"
+              icon="plus"
+              onClick={() => setEditorTarget({ kind: activeTab })}
+            >
+              {t('newContent')}
+            </Button>
+          </div>
         }
       />
 
@@ -105,7 +115,7 @@ export default function PublisherDashboardPage() {
       <div>
         <Segmented
           value={activeTab}
-          onChange={(v) => setActiveTab(v as any)}
+          onChange={(v) => setActiveTab(v as 'resource' | 'activity' | 'report')}
           options={[
             { value: 'resource', label: t('courses'), count: resources.length },
             { value: 'activity', label: t('activities'), count: activities.length },
@@ -132,7 +142,7 @@ export default function PublisherDashboardPage() {
               const course = findCourse(item.courseId)
               const files = item.files || []
               const restrictedCount = files.filter(
-                (f: any) => f.access === 'restricted'
+                (f) => f.access === 'restricted'
               ).length
               const dateVal = 'due' in item ? item.due : item.date
 
@@ -176,7 +186,7 @@ export default function PublisherDashboardPage() {
                       icon="edit"
                       title={t('edit')}
                       className="!px-2"
-                      onClick={() => setEditorTarget({ kind, item } as any)}
+                      onClick={() => setEditorTarget({ kind, item })}
                     />
                     <Button
                       size="sm"
@@ -184,7 +194,7 @@ export default function PublisherDashboardPage() {
                       icon="trash"
                       title={t('delete')}
                       className="!px-2 hover:!text-danger"
-                      onClick={() => setDeletingItem({ kind, item } as any)}
+                      onClick={() => setDeletingItem({ kind, item } as EditableItem)}
                     />
                   </div>
                 </div>

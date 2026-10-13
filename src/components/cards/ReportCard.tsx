@@ -81,7 +81,7 @@ export function ReportCard({
         <AdminBar item={item} />
       </div>
 
-      <FilesDrawer files={item.files} />
+      <FilesDrawer files={item.files} onPreview={onPreview} />
     </Card>
   )
 }

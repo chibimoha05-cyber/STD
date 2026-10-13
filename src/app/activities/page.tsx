@@ -1,10 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import {
-  initialCourses,
-  type ActivityKind,
-} from '@/lib/data/initialData'
+import { type ActivityKind } from '@/lib/data/initialData'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Segmented } from '@/components/ui/Segmented'
 import { Select } from '@/components/ui/Select'
@@ -14,11 +11,9 @@ import { ActivityCard } from '@/components/cards/ActivityCard'
 import { useI18n } from '@/lib/i18n/context'
 
 export default function ActivitiesPage() {
-  const { t, L, activities } = useI18n()
+  const { t, L, courses, activities } = useI18n()
   const [kind, setKind] = useState<'all' | ActivityKind>('all')
   const [cid, setCid] = useState('')
-
-  const courses = initialCourses
 
   const list = activities
     .filter(

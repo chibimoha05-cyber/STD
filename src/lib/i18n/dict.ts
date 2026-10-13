@@ -7,6 +7,7 @@ export const dict = {
   schedule: ['جدول المحاضرات', 'Schedule'],
   courses: ['المواد الدراسية', 'Courses'],
   activities: ['الامتحانات والواجبات', 'Exams & Assignments'],
+  activity: ['نشاط (امتحان / واجب)', 'Activity (Exam / Assignment)'],
   reports: ['التقارير', 'Reports'],
   search: ['البحث', 'Search'],
   publisher: ['لوحة الناشر', 'Publisher'],

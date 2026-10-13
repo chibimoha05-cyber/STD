@@ -3,10 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import {
-  initialCourses,
-  type ResourceType,
-} from '@/lib/data/initialData'
+import { type ResourceType } from '@/lib/data/initialData'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Empty } from '@/components/ui/Empty'
@@ -22,10 +19,10 @@ export default function CourseDetailPage() {
   const params = useParams()
   const id = params?.id as string
 
-  const { t, L, publisher, setEditorTarget, resources, activities } = useI18n()
+  const { t, L, publisher, setEditorTarget, courses, resources, activities } = useI18n()
   const [tab, setTab] = useState<'overview' | ResourceType | 'activities'>('overview')
 
-  const c = initialCourses.find((course) => course.id === id)
+  const c = courses.find((course) => course.id === id)
 
   if (!c) {
     return (
@@ -83,7 +80,7 @@ export default function CourseDetailPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <Segmented
           value={tab}
-          onChange={(v) => setTab(v as any)}
+          onChange={(v) => setTab(v as 'overview' | ResourceType | 'activities')}
           options={[
             { value: 'overview', label: t('all'), count: res.length },
             ...RTYPES.map((r) => ({
