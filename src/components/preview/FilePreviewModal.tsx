@@ -9,6 +9,7 @@ import { AccessBadge } from '@/components/ui/Badge'
 import { Empty } from '@/components/ui/Empty'
 import { useI18n } from '@/lib/i18n/context'
 import { isValidUUID } from '@/lib/utils/uuid'
+import { PdfViewer } from '@/components/preview/PdfViewer'
 
 function FilePreviewBody({
   file,
@@ -94,7 +95,7 @@ function FilePreviewBody({
 
   return (
     <div className="relative min-h-[50vh] flex flex-col justify-center">
-      {loading && (
+      {loading && !isPdf && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface/80 backdrop-blur-[2px] gap-3 z-10 rounded-xl">
           <div className="size-8 rounded-full border-2 border-brand border-t-transparent animate-spin" />
           <p className="text-xs text-muted font-medium">جارٍ تحميل الملف…</p>
@@ -102,18 +103,14 @@ function FilePreviewBody({
       )}
 
       {isPdf ? (
-        <div className="w-full h-[65vh] sm:h-[75vh] rounded-xl overflow-hidden border border-line bg-surface shadow-inner">
-          <iframe
-            src={`${previewUrl}#toolbar=1&navpanes=0`}
-            className="w-full h-full border-0"
-            title={file.name}
-            onLoad={() => setLoading(false)}
-            onError={() => {
-              setLoading(false)
-              setLoadError(true)
-            }}
-          />
-        </div>
+        <PdfViewer
+          url={previewUrl}
+          fileName={file.name}
+          fileSize={file.size}
+          access={file.access}
+          onOpenExternal={() => window.open(previewUrl, '_blank')}
+          onDownload={handleDownload}
+        />
       ) : isImage ? (
         <div className="flex items-center justify-center min-h-[50vh] max-h-[72vh] bg-sunken rounded-xl p-3 sm:p-6 overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -242,12 +239,12 @@ export function FilePreviewModal({
             <div className="flex items-center gap-2">
               {isReal && (
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   icon="external"
                   onClick={handleOpenInNewTab}
                   title={t('openInNewTab')}
                 >
-                  <span className="hidden sm:inline">{t('openInNewTab')}</span>
+                  <span>{t('openInNewTab')}</span>
                 </Button>
               )}
               <Button variant="primary" icon="download" onClick={handleDownload}>
