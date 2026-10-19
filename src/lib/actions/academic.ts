@@ -1,8 +1,8 @@
 'use server'
 
-import { randomUUID } from 'crypto'
 import { verifyPublisherAuth } from '@/lib/actions/attachments'
 import { isValidUUID } from '@/lib/utils/uuid'
+import { generateSafeStoragePath } from '@/lib/utils/storage'
 import type { ResourceType, ActivityKind, ReportCategory, ExceptionType } from '@/lib/data/initialData'
 
 export interface ActionResult<T = unknown> {
@@ -665,10 +665,7 @@ export async function deleteCourseAction(id: string): Promise<ActionResult> {
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024 // 50 MB limit
 
-function sanitizeFileName(fileName: string): string {
-  const base = fileName.split(/[/\\]/).pop() || 'file'
-  return base.replace(/[^\w.\- \u0600-\u06FF]/g, '_').trim()
-}
+export { generateSafeStoragePath }
 
 export interface UploadAttachmentResult {
   id: string
@@ -702,10 +699,7 @@ export async function uploadAttachmentAction(
   const safeAccess: 'public' | 'restricted' = access === 'restricted' ? 'restricted' : 'public'
   const targetBucket = safeAccess === 'restricted' ? 'attachments-restricted' : 'attachments-public'
 
-  const sanitizedName = sanitizeFileName(file.name)
-  const fileUUID = randomUUID()
-  const storagePath = `${safeAccess}/${fileUUID}_${sanitizedName}`
-
+  const storagePath = generateSafeStoragePath(file.name, safeAccess)
   const supabase = auth.supabase
 
   try {
@@ -717,7 +711,7 @@ export async function uploadAttachmentAction(
       .from(targetBucket)
       .upload(storagePath, buffer, {
         contentType: file.type || 'application/octet-stream',
-        upsert: false,
+        upsert: true,
       })
 
     if (uploadError) {

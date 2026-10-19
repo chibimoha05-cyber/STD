@@ -24,6 +24,7 @@ import {
 } from '@/lib/actions/academic'
 import { createClient } from '@/lib/supabase/client'
 import { isValidUUID } from '@/lib/utils/uuid'
+import { generateSafeStoragePath } from '@/lib/utils/storage'
 
 export type ContentEditorTarget = {
   kind: 'resource' | 'activity' | 'report'
@@ -41,6 +42,7 @@ interface UploadingFile {
   status: 'uploading' | 'done' | 'failed'
   progress: number
   rawFile?: File
+  errorMessage?: string
 }
 
 const fmtSize = (bytes: number) => {
@@ -105,31 +107,24 @@ export function ContentEditorModal({
 
   const isNew = !existing
 
-  const sanitizeFileName = (fileName: string): string => {
-    const base = fileName.split(/[/\\]/).pop() || 'file'
-    return base.replace(/[^\w.\- \u0600-\u06FF]/g, '_').trim()
-  }
-
   const uploadSingleFile = async (tempId: string, file: File, access: AccessType) => {
     const safeAccess: 'public' | 'restricted' = access === 'restricted' ? 'restricted' : 'public'
     const targetBucket = safeAccess === 'restricted' ? 'attachments-restricted' : 'attachments-public'
-    const sanitized = sanitizeFileName(file.name)
-    const fileUUID =
-      typeof crypto !== 'undefined' && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `f_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-    const storagePath = `${safeAccess}/${fileUUID}_${sanitized}`
+    const storagePath = generateSafeStoragePath(file.name, safeAccess)
 
     // --------------------------------------------------------------------------
     // Strategy 1: Direct Client-to-Storage Upload (Bypasses Vercel 4.5MB limit)
     // --------------------------------------------------------------------------
     try {
       const supabase = createClient()
+      // Proactively ensure active session state before direct upload
+      await supabase.auth.getSession().catch(() => null)
+
       const { data: uploadData, error: uploadErr } = await supabase.storage
         .from(targetBucket)
         .upload(storagePath, file, {
           contentType: file.type || 'application/octet-stream',
-          upsert: false,
+          upsert: true,
         })
 
       if (!uploadErr && uploadData) {
@@ -206,6 +201,8 @@ export function ContentEditorModal({
           )
           return
         }
+      } else if (uploadErr) {
+        console.warn('[Direct Upload] Storage API error:', uploadErr)
       }
     } catch (clientErr) {
       console.warn('[Direct Upload] Attempt failed, falling back to Server Action:', clientErr)
@@ -236,19 +233,21 @@ export function ContentEditorModal({
           )
         )
       } else {
+        const errorMsg = res.error || 'فشل في رفع الملف'
         setFiles((prev) =>
           prev.map((item) =>
             item.id === tempId
-              ? { ...item, status: 'failed' as const, progress: 0 }
+              ? { ...item, status: 'failed' as const, progress: 0, errorMessage: errorMsg }
               : item
           )
         )
       }
-    } catch {
+    } catch (actionErr) {
+      const errorMsg = actionErr instanceof Error ? actionErr.message : 'فشل غير متوقع أثناء الرفع'
       setFiles((prev) =>
         prev.map((item) =>
           item.id === tempId
-            ? { ...item, status: 'failed' as const, progress: 0 }
+            ? { ...item, status: 'failed' as const, progress: 0, errorMessage: errorMsg }
             : item
         )
       )
@@ -588,7 +587,7 @@ export function ContentEditorModal({
                       {f.status === 'failed' && (
                         <span className="text-danger font-medium inline-flex items-center gap-1">
                           <Icon name="alert" className="size-3.5" />
-                          {t('failed')}
+                          {f.errorMessage || t('failed')}
                         </span>
                       )}
                     </div>

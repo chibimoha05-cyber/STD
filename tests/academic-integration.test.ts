@@ -23,6 +23,7 @@ import {
   saveCourseAction,
   deleteCourseAction,
   uploadAttachmentAction,
+  generateSafeStoragePath,
 } from '../src/lib/actions/academic'
 import { setTestClientFactory, resetTestClientFactory } from '../src/lib/actions/attachment-client'
 import type { Tables } from '../src/lib/supabase/types'
@@ -441,6 +442,28 @@ describe('Server Actions: Security & Publisher Authorization Verification', () =
     } finally {
       resetTestClientFactory()
     }
+  })
+
+  it('generateSafeStoragePath converts Arabic/Unicode filenames into 100% pure ASCII S3 keys', () => {
+    // Test 1: Arabic filename with numbers
+    const p1 = generateSafeStoragePath('محاضرة 1 هياكل بيانات.pdf', 'public')
+    assert.match(p1, /^public\/[a-zA-Z0-9_\-]+_1\.pdf$/)
+    assert.strictEqual(/[^\x00-\x7F]/.test(p1), false, 'Must not contain any non-ASCII characters')
+
+    // Test 2: Pure Arabic filename without numbers
+    const p2 = generateSafeStoragePath('خطة المساق الفصلية.docx', 'restricted')
+    assert.match(p2, /^restricted\/[a-zA-Z0-9_\-]+_file\.docx$/)
+    assert.strictEqual(/[^\x00-\x7F]/.test(p2), false, 'Must not contain any non-ASCII characters')
+
+    // Test 3: Filename with spaces, special symbols, and brackets
+    const p3 = generateSafeStoragePath('Data Structures & Algorithms (Final) 2026.pdf', 'public')
+    assert.match(p3, /^public\/[a-zA-Z0-9_\-]+_Data_Structures_Algorithms_Final\.pdf$/)
+    assert.strictEqual(/[^\x00-\x7F]/.test(p3), false, 'Must not contain any non-ASCII characters')
+
+    // Test 4: File without extension defaults to safe .bin
+    const p4 = generateSafeStoragePath('ملف_مجهول', 'public')
+    assert.match(p4, /^public\/[a-zA-Z0-9_\-]+_file\.bin$/)
+    assert.strictEqual(/[^\x00-\x7F]/.test(p4), false)
   })
 })
 
