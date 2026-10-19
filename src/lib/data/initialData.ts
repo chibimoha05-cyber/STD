@@ -152,13 +152,13 @@ export const initialCourses: Course[] = [
   {
     id: 'c6',
     code: 'MATH 206',
-    name: { ar: 'نظرية الاحتمالية', en: 'Probability Theory' },
-    instructor: { ar: 'م.د. قسم ردام اسماعيل', en: 'Dr. Qasim Radam Ismail' },
+    name: { ar: 'النظرية الاحتسابية', en: 'Theory of Computation' },
+    instructor: { ar: 'م.د. قاسم ردام اسماعيل', en: 'Dr. Qasim Radam Ismail' },
     color: '#2d6a8a',
     credits: 2,
     desc: {
-      ar: 'فضاء العينة والمتغيرات العشوائية والتوزيعات الاحتمالية.',
-      en: 'Sample spaces, random variables and probability distributions.',
+      ar: 'نظرية الاحتسابية واللغات الصورية والأوتوماتا والتطبيقات الحسابية.',
+      en: 'Theory of computation, formal languages, automata, and computational models.',
     },
   },
   {
