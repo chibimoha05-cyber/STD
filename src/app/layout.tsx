@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { I18nProvider } from '@/lib/i18n/context'
 import { AppShell } from '@/components/layout/AppShell'
+import { TelegramProvider } from '@/components/telegram/TelegramProvider'
 
 export const metadata: Metadata = {
   title: 'قسم علوم الحاسبات – كلية التربية للعلوم الصرفة',
@@ -16,6 +17,9 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#1f3d6b" />
+        <script src="https://telegram.org/js/telegram-web-app.js" async />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -34,6 +38,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen antialiased bg-paper text-ink transition-colors selection:bg-brand selection:text-white">
         <I18nProvider>
+          <TelegramProvider />
           <AppShell>{children}</AppShell>
         </I18nProvider>
       </body>

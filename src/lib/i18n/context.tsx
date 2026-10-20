@@ -186,6 +186,9 @@ export function I18nProvider({
       setActivities(data.activities)
       setReports(data.reports)
       setExceptions(data.exceptions)
+      try {
+        localStorage.setItem('academic_offline_data', JSON.stringify(data))
+      } catch {}
     } catch (err) {
       console.error('[I18nProvider] Failed to refresh academic data:', err)
     } finally {
@@ -238,6 +241,24 @@ export function I18nProvider({
     let active = true
 
     const loadInitialState = async () => {
+      // 1. Read offline cache immediately so users see content without network
+      if (typeof window !== 'undefined') {
+        try {
+          const cached = localStorage.getItem('academic_offline_data')
+          if (cached) {
+            const parsed = JSON.parse(cached)
+            if (parsed.courses && parsed.courses.length > 0) setCourses(parsed.courses)
+            if (parsed.slots && parsed.slots.length > 0) setSlots(parsed.slots)
+            if (parsed.resources) setResources(parsed.resources)
+            if (parsed.activities) setActivities(parsed.activities)
+            if (parsed.reports) setReports(parsed.reports)
+            if (parsed.exceptions) setExceptions(parsed.exceptions)
+            setLoadingData(false)
+          }
+        } catch {}
+      }
+
+      // 2. Fetch fresh academic data
       try {
         const data = await fetchFullPlatformData()
         if (active) {
@@ -248,9 +269,15 @@ export function I18nProvider({
           setReports(data.reports)
           setExceptions(data.exceptions)
           setLoadingData(false)
+          try {
+            localStorage.setItem('academic_offline_data', JSON.stringify(data))
+          } catch {}
         }
       } catch (err) {
-        console.error('[I18nProvider] Initial load error:', err)
+        console.error('[I18nProvider] Initial load error (falling back to offline cache):', err)
+        if (active) {
+          setLoadingData(false)
+        }
       }
 
       if (active) {

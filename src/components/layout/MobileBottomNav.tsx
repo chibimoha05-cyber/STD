@@ -12,6 +12,41 @@ export function MobileBottomNav() {
   const pathname = usePathname()
   const { lang, setLang, dark, toggleTheme, publisher, logout, t } = useI18n()
   const [moreOpen, setMoreOpen] = useState(false)
+  const [optimisticTab, setOptimisticTab] = useState<string | null>(null)
+  const transitionTimerRef = React.useRef<NodeJS.Timeout | null>(null)
+
+  // Optimistic tab transition handler for smoother mobile touch feedback
+  const handleTabTransition = (e: React.MouseEvent, href: string) => {
+    if (pathname === href) return
+
+    // Pre-commit optimistic route state before allowing navigation
+    if (optimisticTab !== href) {
+      e.preventDefault()
+      setOptimisticTab(href)
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current)
+      transitionTimerRef.current = setTimeout(() => {
+        setOptimisticTab(null)
+      }, 750)
+      return
+    }
+
+    setOptimisticTab(null)
+  }
+
+  const handleMoreClick = (e: React.MouseEvent) => {
+    // Sync drawer open with optimistic state indicator
+    if (optimisticTab !== 'more') {
+      e.preventDefault()
+      setOptimisticTab('more')
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current)
+      transitionTimerRef.current = setTimeout(() => {
+        setOptimisticTab(null)
+      }, 750)
+      return
+    }
+    setOptimisticTab(null)
+    setMoreOpen(true)
+  }
 
   const tabs = [
     { href: '/', icon: 'home', label: t('home') },
@@ -71,12 +106,18 @@ export function MobileBottomNav() {
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-surface border-t border-line grid grid-cols-5 pb-[env(safe-area-inset-bottom)] select-none shadow-lg">
         {tabs.map((tab) => {
           const active = isActive(tab.href)
+          const isOptimistic = optimisticTab === tab.href
           return (
             <Link
               key={tab.href}
               href={tab.href}
-              className={`flex flex-col items-center justify-center gap-1 h-16 text-[11px] font-medium transition-colors ${
-                active ? 'text-brand font-semibold' : 'text-muted'
+              onClick={(e) => handleTabTransition(e, tab.href)}
+              className={`flex flex-col items-center justify-center gap-1 h-16 text-[11px] font-medium transition-all duration-150 ${
+                isOptimistic
+                  ? 'text-brand scale-90 animate-pulse'
+                  : active
+                  ? 'text-brand font-semibold'
+                  : 'text-muted'
               }`}
             >
               <Icon name={tab.icon} className="size-5" />
@@ -87,9 +128,13 @@ export function MobileBottomNav() {
 
         <button
           type="button"
-          onClick={() => setMoreOpen(true)}
-          className={`flex flex-col items-center justify-center gap-1 h-16 text-[11px] font-medium transition-colors cursor-pointer ${
-            isMoreActive ? 'text-brand font-semibold' : 'text-muted'
+          onClick={handleMoreClick}
+          className={`flex flex-col items-center justify-center gap-1 h-16 text-[11px] font-medium transition-all duration-150 cursor-pointer ${
+            optimisticTab === 'more'
+              ? 'text-brand scale-90 animate-pulse'
+              : isMoreActive
+              ? 'text-brand font-semibold'
+              : 'text-muted'
           }`}
         >
           <Icon name="grid" className="size-5" />

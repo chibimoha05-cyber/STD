@@ -1,0 +1,17 @@
+{
+  "name": "قسم علوم الحاسبات – المنصة الأكاديمية",
+  "short_name": "المنصة الأكاديمية",
+  "description": "المنصة الأكاديمية لطلبة قسم علوم الحاسبات: جداول المحاضرات، المواد والملازم، الامتحانات والواجبات",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1f3d6b",
+  "icons": [
+    {
+      "src": "/window.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
+
