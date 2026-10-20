@@ -43,7 +43,7 @@ export function MobileBottomNav() {
     setTimeout(() => {
       setIsTransitioning(false)
       router.push(href)
-    }, 450)
+    }, 1150)
   }
 
   const handleMoreClick = (e: React.MouseEvent) => {
@@ -67,7 +67,7 @@ export function MobileBottomNav() {
     setTimeout(() => {
       setIsTransitioning(false)
       setMoreOpen(true)
-    }, 400)
+    }, 900)
   }
 
   const tabs = [

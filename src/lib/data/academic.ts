@@ -330,17 +330,29 @@ export interface PlatformAcademicData {
   reports: Report[]
 }
 
+// Connection pool throttle for Supabase free-tier connection stability
+const waitConnectionSlot = (ms = 260) => new Promise((resolve) => setTimeout(resolve, ms))
+
 export async function fetchFullPlatformData(
   client?: SupabaseClient<Database>
 ): Promise<PlatformAcademicData> {
-  const [courses, slots, exceptions, resources, activities, reports] = await Promise.all([
-    fetchCourses(client),
-    fetchSlots(client),
-    fetchScheduleExceptions(client),
-    fetchResources(client),
-    fetchActivities(client),
-    fetchReports(client),
-  ])
+  // Serialized query waterfall to prevent exhausting pgBouncer connection limits on free tier
+  const courses = await fetchCourses(client)
+  await waitConnectionSlot(250)
+
+  const slots = await fetchSlots(client)
+  await waitConnectionSlot(250)
+
+  const exceptions = await fetchScheduleExceptions(client)
+  await waitConnectionSlot(250)
+
+  const resources = await fetchResources(client)
+  await waitConnectionSlot(250)
+
+  const activities = await fetchActivities(client)
+  await waitConnectionSlot(250)
+
+  const reports = await fetchReports(client)
 
   return {
     courses,

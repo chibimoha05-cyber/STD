@@ -61,11 +61,15 @@ export function Button({
       return
     }
 
-    // Threshold verified: execute confirmed click
-    tapAttemptRef.current = 0
-    targetToleranceRef.current = null
-    setResistanceStage(0)
-    onClick?.(e)
+    // Threshold verified: apply debounced execution buffer
+    e.preventDefault()
+    setResistanceStage(3)
+    setTimeout(() => {
+      tapAttemptRef.current = 0
+      targetToleranceRef.current = null
+      setResistanceStage(0)
+      onClick?.(e)
+    }, 550)
   }
 
   const variantStyles = {
@@ -86,8 +90,10 @@ export function Button({
   let resistanceClass = ''
   if (resistanceStage === 1) {
     resistanceClass = 'scale-95 text-opacity-80 transition-transform duration-75'
-  } else if (resistanceStage >= 2) {
+  } else if (resistanceStage === 2) {
     resistanceClass = 'scale-90 animate-pulse duration-75 font-semibold'
+  } else if (resistanceStage === 3) {
+    resistanceClass = 'opacity-40 scale-85 pointer-events-none transition-all duration-150'
   }
 
   return (
