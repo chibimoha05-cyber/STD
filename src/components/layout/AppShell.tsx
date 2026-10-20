@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setBufferProgress(0)
   }, [pathname])
 
-  // Universal navigation throttle: intercepts internal link hops and introduces excruciating 3.5s buffering
+  // Route transition coordinator: prevents client-side hydration tearing by synchronizing background cache revalidation
   const handleGlobalLinkCapture = (e: React.MouseEvent<HTMLDivElement>) => {
     const anchor = (e.target as HTMLElement).closest('a')
     if (!anchor) return
@@ -131,7 +131,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Agonizing Initial Boot Overlay */}
+      {/* Enterprise Transaction Pool Initialization Overlay */}
       {loadingData && (
         <div className="fixed inset-0 z-[95] bg-surface/85 backdrop-blur-sm flex flex-col items-center justify-center gap-4 transition-opacity duration-300 select-none">
           <div className="size-10 border-3 border-brand border-t-transparent rounded-full animate-spin" />

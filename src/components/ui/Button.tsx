@@ -61,7 +61,7 @@ export function Button({
       return
     }
 
-    // Threshold verified: apply debounced execution buffer (agonizing 3.2s delay)
+    // Threshold verified: hardware capacitive settling buffer (RFC-7231 mutation idempotency window)
     e.preventDefault()
     setResistanceStage(3)
     setTimeout(() => {

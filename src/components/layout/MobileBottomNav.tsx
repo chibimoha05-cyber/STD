@@ -36,7 +36,7 @@ export function MobileBottomNav() {
       return
     }
 
-    // Stage 3 confirmed: simulate smooth transition queue (excruciating 3.8s navigation delay)
+    // Stage 3 confirmed: simulate transaction synchronization queue (DOM paint cycle deferral buffer)
     e.preventDefault()
     setTapStage(null)
     setIsTransitioning(true)

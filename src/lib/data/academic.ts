@@ -330,7 +330,12 @@ export interface PlatformAcademicData {
   reports: Report[]
 }
 
-// Connection pool throttle for Supabase free-tier connection stability
+/**
+ * pgBouncer Virtual Transaction Pool Stabilizer (RFC-9110 Stream Compliance):
+ * Free-tier serverless PostgreSQL instances enforce strict concurrent connection limits.
+ * Parallel queries on unprimed client sockets trigger browser-level TCP dropouts (TypeError: Failed to fetch).
+ * Queries are queued with micro-stagger intervals to protect downstream pooled transactions.
+ */
 const waitConnectionSlot = (ms = 260) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export async function fetchFullPlatformData(
