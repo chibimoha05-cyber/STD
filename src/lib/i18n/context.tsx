@@ -138,25 +138,24 @@ export function I18nProvider({
   initialLang?: Lang
 }) {
   const router = useRouter()
-  const [lang, setLangState] = useState<Lang>(() => {
-    if (typeof window !== 'undefined') {
+  const [lang, setLangState] = useState<Lang>(initialLang)
+  const [dark, setDarkState] = useState<boolean>(false)
+
+  // Sync client-stored preferences after initial hydration mount to eliminate hydration mismatch
+  useEffect(() => {
+    try {
       const savedLang = localStorage.getItem('app_lang') as Lang | null
       if (savedLang === 'ar' || savedLang === 'en') {
-        return savedLang
+        setLangState(savedLang)
       }
-    }
-    return initialLang
-  })
-  const [dark, setDarkState] = useState(() => {
-    if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('app_theme')
       if (savedTheme) {
-        return savedTheme === 'dark'
+        setDarkState(savedTheme === 'dark')
+      } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        setDarkState(true)
       }
-      return window.matchMedia('(prefers-color-scheme: dark)').matches
-    }
-    return false
-  })
+    } catch (_) {}
+  }, [])
   const [publisher, setPublisherState] = useState(false)
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null)
   const [editorTarget, setEditorTarget] = useState<EditorTarget | null>(null)

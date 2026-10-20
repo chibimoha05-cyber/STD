@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import './globals.css'
 import { I18nProvider } from '@/lib/i18n/context'
 import { AppShell } from '@/components/layout/AppShell'
@@ -19,8 +20,13 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1f3d6b" />
-        <script src="https://telegram.org/js/telegram-web-app.js" async />
-        <script
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
+        />
+        <Script
+          id="theme-initializer"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               try {

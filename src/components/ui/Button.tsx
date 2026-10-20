@@ -47,6 +47,7 @@ export function Button({
       type={type}
       title={title}
       aria-label={title}
+      suppressHydrationWarning
       disabled={disabled}
       onClick={onClick}
       className={`inline-flex items-center justify-center font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap cursor-pointer ${variantStyles} ${sizeStyles} ${className}`}

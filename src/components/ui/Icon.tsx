@@ -46,6 +46,7 @@ export function Icon({
   const path = P[name] || P.file
   return (
     <svg
+      suppressHydrationWarning
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
