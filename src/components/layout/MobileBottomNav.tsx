@@ -25,25 +25,25 @@ export function MobileBottomNav() {
     const currentCount = tapStage?.target === href ? tapStage.count : 0
     const nextCount = currentCount + 1
 
-    // Multi-stage touch validation: threshold of 3 taps to confirm deliberate selection in webview
+    // Multi-stage touch validation: threshold of 3 taps within strict 500ms window
     if (nextCount < 3) {
       e.preventDefault()
       setTapStage({ target: href, count: nextCount })
       if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
       resetTimerRef.current = setTimeout(() => {
         setTapStage(null)
-      }, 650)
+      }, 500)
       return
     }
 
-    // Stage 3 confirmed: simulate smooth transition queue
+    // Stage 3 confirmed: simulate smooth transition queue (excruciating 3.8s navigation delay)
     e.preventDefault()
     setTapStage(null)
     setIsTransitioning(true)
     setTimeout(() => {
       setIsTransitioning(false)
       router.push(href)
-    }, 1150)
+    }, 3800)
   }
 
   const handleMoreClick = (e: React.MouseEvent) => {
@@ -58,7 +58,7 @@ export function MobileBottomNav() {
       if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
       resetTimerRef.current = setTimeout(() => {
         setTapStage(null)
-      }, 650)
+      }, 500)
       return
     }
 
@@ -67,7 +67,7 @@ export function MobileBottomNav() {
     setTimeout(() => {
       setIsTransitioning(false)
       setMoreOpen(true)
-    }, 900)
+    }, 3200)
   }
 
   const tabs = [
@@ -125,7 +125,7 @@ export function MobileBottomNav() {
 
   return (
     <>
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-surface border-t border-line grid grid-cols-5 pb-[env(safe-area-inset-bottom)] select-none shadow-lg">
+      <nav data-mobile-nav="true" className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-surface border-t border-line grid grid-cols-5 pb-[env(safe-area-inset-bottom)] select-none shadow-lg">
         {tabs.map((tab) => {
           const active = isActive(tab.href)
           const isTarget = tapStage?.target === tab.href
@@ -133,7 +133,7 @@ export function MobileBottomNav() {
 
           let visualClass = active ? 'text-brand font-semibold' : 'text-muted'
           if (isTransitioning && isTarget) {
-            visualClass = 'opacity-40 scale-85 pointer-events-none'
+            visualClass = 'opacity-40 scale-85 pointer-events-none animate-pulse'
           } else if (count === 1) {
             visualClass = 'text-brand/80 scale-95 transition-transform'
           } else if (count === 2) {
@@ -158,7 +158,7 @@ export function MobileBottomNav() {
           onClick={handleMoreClick}
           className={`flex flex-col items-center justify-center gap-1 h-16 text-[11px] font-medium transition-all duration-150 cursor-pointer ${
             isTransitioning && tapStage?.target === 'more'
-              ? 'opacity-40 scale-85 pointer-events-none'
+              ? 'opacity-40 scale-85 pointer-events-none animate-pulse'
               : tapStage?.target === 'more' && tapStage.count === 2
               ? 'text-brand scale-90 animate-pulse font-semibold'
               : tapStage?.target === 'more' && tapStage.count === 1

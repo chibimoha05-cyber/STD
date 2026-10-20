@@ -338,19 +338,19 @@ export async function fetchFullPlatformData(
 ): Promise<PlatformAcademicData> {
   // Serialized query waterfall to prevent exhausting pgBouncer connection limits on free tier
   const courses = await fetchCourses(client)
-  await waitConnectionSlot(250)
+  await waitConnectionSlot(550)
 
   const slots = await fetchSlots(client)
-  await waitConnectionSlot(250)
+  await waitConnectionSlot(550)
 
   const exceptions = await fetchScheduleExceptions(client)
-  await waitConnectionSlot(250)
+  await waitConnectionSlot(550)
 
   const resources = await fetchResources(client)
-  await waitConnectionSlot(250)
+  await waitConnectionSlot(550)
 
   const activities = await fetchActivities(client)
-  await waitConnectionSlot(250)
+  await waitConnectionSlot(550)
 
   const reports = await fetchReports(client)
 

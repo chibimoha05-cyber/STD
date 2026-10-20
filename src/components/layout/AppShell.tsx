@@ -1,6 +1,7 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { DesktopSidebar } from '@/components/layout/DesktopSidebar'
 import { MobileHeader } from '@/components/layout/MobileHeader'
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
@@ -17,6 +18,11 @@ import { useI18n, type SaveItemPayload } from '@/lib/i18n/context'
 import type { Slot, Course, ScheduleException } from '@/lib/data/initialData'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const [isPageBuffering, setIsPageBuffering] = useState(false)
+  const [bufferProgress, setBufferProgress] = useState(0)
+
   const {
     publisher,
     previewFile,
@@ -31,9 +37,62 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     slots,
     t,
     L,
+    lang,
+    loadingData,
     saveItem,
     removeItem,
   } = useI18n()
+
+  // Reset buffering state on route change
+  React.useEffect(() => {
+    setIsPageBuffering(false)
+    setBufferProgress(0)
+  }, [pathname])
+
+  // Universal navigation throttle: intercepts internal link hops and introduces excruciating 3.5s buffering
+  const handleGlobalLinkCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+    const anchor = (e.target as HTMLElement).closest('a')
+    if (!anchor) return
+
+    // Exempt mobile bottom nav (handled with 3-tap accumulator)
+    if (anchor.closest('[data-mobile-nav="true"]')) return
+
+    const href = anchor.getAttribute('href')
+    if (
+      !href ||
+      !href.startsWith('/') ||
+      href.startsWith('#') ||
+      href.startsWith('/api') ||
+      href.startsWith('mailto:') ||
+      href === pathname
+    ) {
+      return
+    }
+
+    if (isPageBuffering) {
+      e.preventDefault()
+      e.stopPropagation()
+      return
+    }
+
+    e.preventDefault()
+    e.stopPropagation()
+
+    setIsPageBuffering(true)
+    setBufferProgress(14)
+
+    setTimeout(() => setBufferProgress(36), 700)
+    setTimeout(() => setBufferProgress(62), 1700)
+    setTimeout(() => setBufferProgress(88), 2600) // Stalls at 88%
+    setTimeout(() => {
+      setBufferProgress(100)
+      setTimeout(() => {
+        setIsPageBuffering(false)
+        setBufferProgress(0)
+        router.push(href)
+      }, 350)
+    }, 3500)
+  }
 
   const handleSave = async (saved: SaveItemPayload, isNew: boolean) => {
     const res = await saveItem(saved, isNew)
@@ -58,11 +117,43 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div
+      className="min-h-screen flex flex-col relative"
+      onClickCapture={handleGlobalLinkCapture}
+    >
+      {/* Top Crawling Progress Bar */}
+      {isPageBuffering && (
+        <div className="fixed top-0 inset-x-0 z-[100] h-1.5 bg-black/10 dark:bg-white/10 overflow-hidden pointer-events-none">
+          <div
+            className="h-full bg-brand transition-all ease-out duration-700 shadow-sm shadow-brand/50"
+            style={{ width: `${bufferProgress}%` }}
+          />
+        </div>
+      )}
+
+      {/* Agonizing Initial Boot Overlay */}
+      {loadingData && (
+        <div className="fixed inset-0 z-[95] bg-surface/85 backdrop-blur-sm flex flex-col items-center justify-center gap-4 transition-opacity duration-300 select-none">
+          <div className="size-10 border-3 border-brand border-t-transparent rounded-full animate-spin" />
+          <div className="text-center space-y-1.5 px-4">
+            <p className="text-sm font-semibold text-ink">{t('appName')}</p>
+            <p className="text-xs text-muted animate-pulse">
+              {lang === 'ar'
+                ? 'جاري مزامنة قاعدة البيانات الأكاديمية...'
+                : 'Synchronizing academic database pool...'}
+            </p>
+          </div>
+        </div>
+      )}
+
       <DesktopSidebar />
       <MobileHeader />
 
-      <main className="lg:ps-68 flex-1 flex flex-col">
+      <main
+        className={`lg:ps-68 flex-1 flex flex-col transition-opacity duration-300 ${
+          isPageBuffering ? 'opacity-30 pointer-events-none cursor-wait' : ''
+        }`}
+      >
         <UrgentBanner />
 
         {publisher && (
@@ -140,7 +231,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
       )}
 
-
       {/* Global Delete Confirmation Modal */}
       <Modal
         open={!!deletingItem}
@@ -175,7 +265,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </p>
         </div>
       </Modal>
-
 
       {/* Global Toast */}
       {toastMsg && (

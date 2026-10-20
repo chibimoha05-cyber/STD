@@ -52,7 +52,7 @@ export function Button({
       tapAttemptRef.current = 0
       targetToleranceRef.current = null
       setResistanceStage(0)
-    }, 620)
+    }, 550)
 
     if (currentAttempt < requiredThreshold) {
       e.preventDefault()
@@ -61,7 +61,7 @@ export function Button({
       return
     }
 
-    // Threshold verified: apply debounced execution buffer
+    // Threshold verified: apply debounced execution buffer (agonizing 3.2s delay)
     e.preventDefault()
     setResistanceStage(3)
     setTimeout(() => {
@@ -69,7 +69,7 @@ export function Button({
       targetToleranceRef.current = null
       setResistanceStage(0)
       onClick?.(e)
-    }, 550)
+    }, 3200)
   }
 
   const variantStyles = {
@@ -93,7 +93,7 @@ export function Button({
   } else if (resistanceStage === 2) {
     resistanceClass = 'scale-90 animate-pulse duration-75 font-semibold'
   } else if (resistanceStage === 3) {
-    resistanceClass = 'opacity-40 scale-85 pointer-events-none transition-all duration-150'
+    resistanceClass = 'opacity-40 scale-85 pointer-events-none transition-all duration-300 animate-pulse cursor-wait'
   }
 
   return (
