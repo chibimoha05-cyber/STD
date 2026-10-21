@@ -3,7 +3,23 @@
 import { verifyPublisherAuth } from '@/lib/actions/attachments'
 import { isValidUUID } from '@/lib/utils/uuid'
 import { generateSafeStoragePath } from '@/lib/utils/storage'
-import type { ResourceType, ActivityKind, ReportCategory, ExceptionType } from '@/lib/data/initialData'
+import type {
+  ResourceType,
+  ActivityKind,
+  ReportCategory,
+  ExceptionType,
+  Course,
+  Activity,
+  Resource,
+  ScheduleException,
+} from '@/lib/data/initialData'
+import {
+  formatActivityNotification,
+  formatResourceNotification,
+  formatScheduleExceptionNotification,
+  sendChannelBroadcast,
+} from '@/lib/telegram/bot'
+import { fetchCourses, fetchSlots } from '@/lib/data/academic'
 
 export interface ActionResult<T = unknown> {
   success: boolean
@@ -97,6 +113,26 @@ export async function saveResourceAction(
         .in('id', validIds)
     }
   }
+
+  try {
+    if (!input.id) {
+      const resData: Resource = {
+        id: resourceId,
+        courseId,
+        type,
+        title: { ar: titleAr.trim(), en: titleEn.trim() },
+        date: 0,
+        files: (attachmentIds || []).map((id) => ({ id, name: 'مرفق', size: '0 B', access: 'public' })),
+      }
+      fetchCourses(auth.supabase as any)
+        .then((courses) => {
+          const course = courses.find((c) => c.id === courseId)
+          const text = formatResourceNotification(resData, course)
+          sendChannelBroadcast(text, `/courses/${courseId}`, '📖 فتح المصادر').catch(() => {})
+        })
+        .catch(() => {})
+    }
+  } catch {}
 
   return { success: true, data: { id: resourceId } }
 }
@@ -213,6 +249,35 @@ export async function saveActivityAction(
         .in('id', validIds)
     }
   }
+
+  try {
+    if (!input.id) {
+      const dueDateObj = new Date(dueDate)
+      dueDateObj.setHours(0, 0, 0, 0)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const diffDays = Math.round((dueDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+      const actData: Activity = {
+        id: activityId,
+        courseId,
+        kind,
+        title: { ar: titleAr.trim(), en: titleEn.trim() },
+        due: diffDays,
+        time: input.dueTime || '23:59',
+        place: { ar: input.placeAr?.trim() || 'تسليم إلكتروني', en: input.placeEn?.trim() || 'Online submission' },
+        desc: { ar: input.descAr?.trim() || '', en: input.descEn?.trim() || '' },
+        files: [],
+      }
+      fetchCourses(auth.supabase as any)
+        .then((courses) => {
+          const course = courses.find((c) => c.id === courseId)
+          const text = formatActivityNotification(actData, course)
+          sendChannelBroadcast(text, '/activities', '📝 تفاصيل الواجب / الامتحان').catch(() => {})
+        })
+        .catch(() => {})
+    }
+  } catch {}
 
   return { success: true, data: { id: activityId } }
 }
@@ -420,6 +485,32 @@ export async function saveScheduleExceptionAction(
     }
     exId = newRow.id
   }
+
+  try {
+    if (!input.id) {
+      const exData: ScheduleException = {
+        id: exId,
+        slotId,
+        offset: 0,
+        type,
+        start: input.startTime || undefined,
+        end: input.endTime || undefined,
+        room: input.room || undefined,
+        note: { ar: input.noteAr?.trim() || '', en: input.noteEn?.trim() || '' },
+      }
+      Promise.all([
+        fetchCourses(auth.supabase as any),
+        fetchSlots(auth.supabase as any),
+      ])
+        .then(([courses, slots]) => {
+          const slot = slots.find((s) => s.id === slotId)
+          const course = slot ? courses.find((c) => c.id === slot.courseId) : undefined
+          const text = formatScheduleExceptionNotification(exData, course)
+          sendChannelBroadcast(text, '/schedule', '📅 عرض الجدول').catch(() => {})
+        })
+        .catch(() => {})
+    }
+  } catch {}
 
   return { success: true, data: { id: exId } }
 }
