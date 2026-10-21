@@ -27,7 +27,12 @@ export function TelegramProvider() {
     }
 
     // 2. Register Service Worker for offline support
-    if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+    if (
+      'serviceWorker' in navigator &&
+      (window.location.protocol === 'https:' ||
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1')
+    ) {
       navigator.serviceWorker.register('/sw.js').catch(() => {
         // Silently ignore if not supported or blocked
       })

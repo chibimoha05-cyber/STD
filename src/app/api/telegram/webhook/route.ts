@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isTelegramAdmin, getAdminIds } from '@/lib/telegram/config'
 import {
   sendTelegramMessage,
+  pinChatMessage,
   sendChannelBroadcast,
   saveTargetChannelId,
   buildWebAppKeyboard,
@@ -19,28 +20,37 @@ export async function POST(req: NextRequest) {
       const chat = body.my_chat_member.chat
       const status = body.my_chat_member.new_chat_member?.status
 
-      if (status === 'administrator') {
+      if (status === 'administrator' || status === 'member') {
         saveTargetChannelId(chat.id)
 
-        // Send confirmation announcement to the channel
-        await sendTelegramMessage(
+        // Send confirmation announcement to the group/channel
+        const welcomeRes = await sendTelegramMessage(
           chat.id,
-          `<b>🎓 تم تفعيل البوت الأكاديمي بنجاح في القناة!</b>\n\n` +
-            `سيتم نشر مواعيد الامتحانات، الواجبات، وتنبيهات المحاضرات الصباحية هنا تلقائياً.\n` +
-            `يمكنكم فتح المنصة الأكاديمية في أي وقت من الزر أدناه 👇`,
+          `🎓 <b>المنصة الأكاديمية – قسم علوم الحاسبات</b>\n\n` +
+            `أهلاً بكم يا شباب! تم ربط وتفعيل البوت الأكاديمي الرسمي في المجموعة بنجاح. ✨\n\n` +
+            `سيتم نشر التحديثات والملازم ومواعيد الامتحانات هنا تلقائياً عند النشر في المنصة.\n` +
+            `يمكنكم فتح المنصة الأكاديمية في أي وقت من الزر أدناه 👇\n\n` +
+            `📌 <i>تنبيه للمشرفين: يرجى تثبيت (Pin) هذه الرسالة لتكون مرجعاً دائماً أعلى المحادثة.</i>`,
           {
-            reply_markup: buildWebAppKeyboard('🚀 فتح المنصة الأكاديمية', '/courses/c4'),
+            reply_markup: buildWebAppKeyboard('🚀 فتح المنصة الأكاديمية', '/courses/c4', false),
           }
         )
+
+        // Attempt automatic pin if administrator permissions allow
+        if (welcomeRes.ok && welcomeRes.result && typeof welcomeRes.result === 'object' && 'message_id' in welcomeRes.result) {
+          const msgId = (welcomeRes.result as { message_id: number }).message_id
+          await pinChatMessage(chat.id, msgId)
+        }
 
         // Notify Admins
         const adminIds = getAdminIds()
         for (const adminId of adminIds) {
           await sendTelegramMessage(
             adminId,
-            `📢 <b>تنبيه الإدارة:</b>\nتمت إضافة البوت كأدمن في القناة بنجاح!\n` +
-              `🏷️ <b>اسم القناة:</b> ${chat.title || 'بدون اسم'}\n` +
-              `🆔 <b>معرف القناة:</b> <code>${chat.id}</code>`
+            `📢 <b>تنبيه الإدارة:</b>\nتمت إضافة البوت إلى مجموعة جديدة بنجاح!\n` +
+              `🏷️ <b>اسم المجموعة:</b> ${chat.title || 'بدون اسم'}\n` +
+              `🆔 <b>معرف المجموعة:</b> <code>${chat.id}</code>\n` +
+              `🛡️ <b>الحالة:</b> ${status === 'administrator' ? 'مسؤول (Admin)' : 'عضو (Member)'}`
           )
         }
 
@@ -70,6 +80,31 @@ export async function POST(req: NextRequest) {
 
       // Command: /start
       if (text.startsWith('/start')) {
+        const isGroup = msg.chat.type === 'group' || msg.chat.type === 'supergroup'
+
+        // If invoked in a group/supergroup, save group as channel and reply with pin-ready card
+        if (isGroup) {
+          saveTargetChannelId(chatId)
+
+          const pinRes = await sendTelegramMessage(
+            chatId,
+            `🎓 <b>المنصة الأكاديمية – قسم علوم الحاسبات</b>\n\n` +
+              `أهلاً بكم يا طلبة قسم علوم الحاسبات! مرحباً بكم في المنصة الأكاديمية.\n\n` +
+              `اضغطوا على الزر أدناه لفتح المنصة ومتابعة المحاضرات والملخصات والامتحانات مباشرة 👇\n\n` +
+              `📌 <i>يرجى تثبيت (Pin) هذه الرسالة لتظهر لجميع الطلبة في أعلى المجموعة.</i>`,
+            {
+              reply_markup: buildWebAppKeyboard('🚀 فتح المنصة الأكاديمية', '/courses/c4', false),
+            }
+          )
+
+          if (pinRes.ok && pinRes.result && typeof pinRes.result === 'object' && 'message_id' in pinRes.result) {
+            const msgId = (pinRes.result as { message_id: number }).message_id
+            await pinChatMessage(chatId, msgId)
+          }
+
+          return NextResponse.json({ ok: true })
+        }
+
         if (isAdmin) {
           await sendTelegramMessage(
             chatId,
@@ -81,7 +116,7 @@ export async function POST(req: NextRequest) {
               `📝 <code>/exams</code> - عرض الامتحانات القادمة\n` +
               `🆔 <code>/id</code> - عرض معرفك الرقمي`,
             {
-              reply_markup: buildWebAppKeyboard('🚀 فتح المنصة الأكاديمية', '/courses/c4'),
+              reply_markup: buildWebAppKeyboard('🚀 فتح المنصة الأكاديمية', '/courses/c4', true),
             }
           )
         } else {
@@ -91,7 +126,7 @@ export async function POST(req: NextRequest) {
               `تابع جدول المحاضرات، تنبيهات القاعات، والواجبات مباشرة من تيليجرام.\n` +
               `اضغط الزر أدناه لفتح المنصة 👇`,
             {
-              reply_markup: buildWebAppKeyboard('🚀 فتح المنصة الأكاديمية', '/courses/c4'),
+              reply_markup: buildWebAppKeyboard('🚀 فتح المنصة الأكاديمية', '/courses/c4', true),
             }
           )
         }
@@ -185,3 +220,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 }
+

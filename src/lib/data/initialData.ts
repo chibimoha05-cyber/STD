@@ -256,11 +256,133 @@ export const initialSlots: Slot[] = [
   { id: 's18', courseId: 'c7', weekday: 4, start: '12:30', end: '14:30', room: 'Practical G1+G2', kind: 'lab' },
 ]
 
-export const initialExceptions: ScheduleException[] = []
+export const initialExceptions: ScheduleException[] = [
+  {
+    id: 'ex-off-1',
+    slotId: 's1',
+    offset: 0,
+    type: 'room',
+    room: 'Hall 3',
+    note: { ar: 'تم نقل المحاضرة إلى القاعة 3 مؤقتاً', en: 'Lecture moved to Hall 3 temporarily' },
+  },
+]
 
-export const initialResources: Resource[] = []
+export const initialResources: Resource[] = [
+  {
+    id: 'res-off-1',
+    courseId: 'c4',
+    type: 'summary',
+    title: { ar: 'ملخص هيكلية وتصميم قواعد البيانات المتقدمة', en: 'Advanced Database Systems Architecture Summary' },
+    date: -2,
+    files: [
+      { id: 'f-db-1', name: 'Database_Systems_Summary_Ch1-3.pdf', size: '2.4 MB', access: 'public' },
+      { id: 'f-db-2', name: 'ER_Diagram_Cheatsheet.png', size: '850 KB', access: 'public' },
+    ],
+  },
+  {
+    id: 'res-off-2',
+    courseId: 'c1',
+    type: 'notes',
+    title: { ar: 'ملازم هياكل البيانات - الأشجار والمخططات (Trees & Graphs)', en: 'Data Structures - Trees & Graphs Lecture Notes' },
+    date: -4,
+    files: [
+      { id: 'f-ds-1', name: 'Data_Structures_Trees_Ch4.pdf', size: '3.1 MB', access: 'public' },
+      { id: 'f-ds-2', name: 'Binary_Tree_Traversal_Code.zip', size: '1.1 MB', access: 'public' },
+    ],
+  },
+  {
+    id: 'res-off-3',
+    courseId: 'c2',
+    type: 'prep',
+    title: { ar: 'المختبر العملي الأول: البرمجة كائنية التوجه OOP', en: 'OOP Lab 1: Classes & Inheritance Guide' },
+    date: -6,
+    files: [
+      { id: 'f-oop-1', name: 'OOP_Lab_Manual_2026.pdf', size: '1.8 MB', access: 'public' },
+    ],
+  },
+  {
+    id: 'res-off-4',
+    courseId: 'c6',
+    type: 'pastExam',
+    title: { ar: 'أسئلة امتحانات سابقة: النظرية الاحتسابية والأوتوماتا', en: 'Computation Theory Past Exams Collection' },
+    date: -10,
+    files: [
+      { id: 'f-th-1', name: 'Theory_Computation_Midterm_2025.pdf', size: '1.4 MB', access: 'public' },
+    ],
+  },
+]
 
-export const initialActivities: Activity[] = []
+export const initialActivities: Activity[] = [
+  {
+    id: 'act-off-1',
+    courseId: 'c4',
+    kind: 'exam',
+    title: { ar: 'امتحان نصف الفصل: أنظمة قواعد البيانات', en: 'Midterm Exam: Database Systems' },
+    due: 3,
+    time: '12:30',
+    place: { ar: 'القاعة 2', en: 'Hall 2' },
+    desc: {
+      ar: 'المادة تشمل الفصول الثلاثة الأولى: العلاقات، الجبر العلائقي، ولغة SQL.',
+      en: 'Covers first 3 chapters: Relational Model, Relational Algebra, and SQL.',
+    },
+    files: [
+      { id: 'f-db-syl', name: 'Exam_Syllabus_Topics.pdf', size: '420 KB', access: 'public' },
+    ],
+  },
+  {
+    id: 'act-off-2',
+    courseId: 'c1',
+    kind: 'assignment',
+    title: { ar: 'واجب برمجي: خوارزمية البحث في الأشجار الثنائية', en: 'Assignment: Binary Search Tree Implementation' },
+    due: 5,
+    time: '23:59',
+    place: { ar: 'تسليم إلكتروني', en: 'Online Submission' },
+    desc: {
+      ar: 'كتابة برنامج بلغة C++ لبناء شجرة بحث ثنائية وتنفيذ عمليات الإضافة والحذف والتجوال.',
+      en: 'Implement a BST in C++ with insert, delete, and in-order traversal.',
+    },
+    files: [
+      { id: 'f-ds-req', name: 'Assignment_Requirements.pdf', size: '610 KB', access: 'public' },
+    ],
+  },
+  {
+    id: 'act-off-3',
+    courseId: 'c3',
+    kind: 'exam',
+    title: { ar: 'امتحان عملي: معمارية الحاسوب ولغة التجميع', en: 'Practical Exam: Computer Architecture' },
+    due: 7,
+    time: '12:30',
+    place: { ar: 'المختبر G1', en: 'Lab G1' },
+    desc: {
+      ar: 'تطبيق عملي لكتابة دوال بلغة Assembly 8086 وتنفيذها على المعالج.',
+      en: 'Assembly 8086 practical programming and CPU register tracing.',
+    },
+    files: [],
+  },
+]
 
-export const initialReports: Report[] = []
+export const initialReports: Report[] = [
+  {
+    id: 'rep-off-1',
+    category: 'course',
+    courseId: 'c4',
+    title: { ar: 'تقرير: مقارنة بين قواعد البيانات العلائقية وNoSQL', en: 'Report: Relational vs NoSQL Databases Comparison' },
+    author: { ar: 'أحمد علي وحيدر محمد', en: 'Ahmed Ali & Haider Mohammed' },
+    date: -3,
+    files: [
+      { id: 'f-rep-1', name: 'Relational_vs_NoSQL_Report.pdf', size: '1.9 MB', access: 'public' },
+    ],
+  },
+  {
+    id: 'rep-off-2',
+    category: 'lab',
+    courseId: 'c2',
+    title: { ar: 'تقرير المختبر الثالث: Polymorphism في C++', en: 'Lab Report 3: Polymorphism in C++' },
+    author: { ar: 'سارة خالد ومريم حسن', en: 'Sarah Khalid & Maryam Hassan' },
+    date: -5,
+    files: [
+      { id: 'f-rep-2', name: 'OOP_Lab3_Polymorphism_Report.pdf', size: '920 KB', access: 'public' },
+    ],
+  },
+]
 

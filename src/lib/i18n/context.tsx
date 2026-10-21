@@ -22,6 +22,10 @@ import type {
 import {
   initialCourses,
   initialSlots,
+  initialResources,
+  initialActivities,
+  initialReports,
+  initialExceptions,
 } from '@/lib/data/initialData'
 import {
   fetchFullPlatformData,
@@ -165,10 +169,10 @@ export function I18nProvider({
   // Real database items state
   const [courses, setCourses] = useState<Course[]>(initialCourses)
   const [slots, setSlots] = useState<Slot[]>(initialSlots)
-  const [resources, setResources] = useState<Resource[]>([])
-  const [activities, setActivities] = useState<Activity[]>([])
-  const [reports, setReports] = useState<Report[]>([])
-  const [exceptions, setExceptions] = useState<ScheduleException[]>([])
+  const [resources, setResources] = useState<Resource[]>(initialResources)
+  const [activities, setActivities] = useState<Activity[]>(initialActivities)
+  const [reports, setReports] = useState<Report[]>(initialReports)
+  const [exceptions, setExceptions] = useState<ScheduleException[]>(initialExceptions)
   const [loadingData, setLoadingData] = useState(true)
 
   const showToast = useCallback((msg: string) => {
@@ -181,10 +185,10 @@ export function I18nProvider({
       const data = await fetchFullPlatformData()
       if (data.courses.length > 0) setCourses(data.courses)
       if (data.slots.length > 0) setSlots(data.slots)
-      setResources(data.resources)
-      setActivities(data.activities)
-      setReports(data.reports)
-      setExceptions(data.exceptions)
+      if (data.resources.length > 0) setResources(data.resources)
+      if (data.activities.length > 0) setActivities(data.activities)
+      if (data.reports.length > 0) setReports(data.reports)
+      if (data.exceptions.length > 0) setExceptions(data.exceptions)
       try {
         localStorage.setItem('academic_offline_data', JSON.stringify(data))
       } catch {}
@@ -262,10 +266,10 @@ export function I18nProvider({
         if (active) {
           if (data.courses.length > 0) setCourses(data.courses)
           if (data.slots.length > 0) setSlots(data.slots)
-          setResources(data.resources)
-          setActivities(data.activities)
-          setReports(data.reports)
-          setExceptions(data.exceptions)
+          if (data.resources.length > 0) setResources(data.resources)
+          if (data.activities.length > 0) setActivities(data.activities)
+          if (data.reports.length > 0) setReports(data.reports)
+          if (data.exceptions.length > 0) setExceptions(data.exceptions)
           await new Promise((r) => setTimeout(r, 1200))
           setLoadingData(false)
           try {

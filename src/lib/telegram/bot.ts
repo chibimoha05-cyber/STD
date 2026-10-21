@@ -60,6 +60,27 @@ export async function sendTelegramMessage(
   }
 }
 
+export async function pinChatMessage(
+  chatId: string | number,
+  messageId: number
+): Promise<{ ok: boolean; description?: string }> {
+  try {
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/pinChatMessage`
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        message_id: messageId,
+        disable_notification: false,
+      }),
+    })
+    return await res.json()
+  } catch (err) {
+    return { ok: false, description: String(err) }
+  }
+}
+
 export function buildWebAppKeyboard(buttonText: string, subPath = '', isPrivate = false) {
   const fullUrl = `${PLATFORM_BASE_URL}${subPath.startsWith('/') ? subPath : `/${subPath}`}`
   if (isPrivate) {

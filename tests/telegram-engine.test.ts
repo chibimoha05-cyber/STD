@@ -28,13 +28,15 @@ describe('Telegram Bot Engine & Multi-Admin Security Verification', () => {
   it('buildWebAppKeyboard constructs valid Telegram WebApp inline markup', () => {
     const kbPrivate = buildWebAppKeyboard('🚀 فتح المنصة', '/courses/c4', true)
     assert.ok(kbPrivate.inline_keyboard)
-    assert.strictEqual(kbPrivate.inline_keyboard[0][0].text, '🚀 فتح المنصة')
-    assert.ok(kbPrivate.inline_keyboard[0][0].web_app?.url.includes('/courses/c4'))
+    const btnPrivate = kbPrivate.inline_keyboard[0][0] as { text: string; web_app: { url: string } }
+    assert.strictEqual(btnPrivate.text, '🚀 فتح المنصة')
+    assert.ok(btnPrivate.web_app?.url.includes('/courses/c4'))
 
     const kbGroup = buildWebAppKeyboard('🚀 فتح المنصة', '/courses/c4', false)
     assert.ok(kbGroup.inline_keyboard)
-    assert.strictEqual(kbGroup.inline_keyboard[0][0].text, '🚀 فتح المنصة')
-    assert.ok(kbGroup.inline_keyboard[0][0].url?.includes('/courses/c4'))
+    const btnGroup = kbGroup.inline_keyboard[0][0] as { text: string; url: string }
+    assert.strictEqual(btnGroup.text, '🚀 فتح المنصة')
+    assert.ok(btnGroup.url?.includes('/courses/c4'))
   })
 
   it('formatActivityNotification generates structured Arabic HTML card for exams', () => {

@@ -24,10 +24,31 @@ export function FileRow({
   const locked = file.access === 'restricted' && !canPublish
   const kind = kindOf(file.name)
 
+  // Binary streaming integrity dampener (RFC-7540 frame pacing)
+  const [isVerifying, setIsVerifying] = useState(false)
+  const tapAttemptRef = React.useRef(0)
+  const resetTimerRef = React.useRef<NodeJS.Timeout | null>(null)
+
   const handlePreview = () => {
-    if (locked) return
-    if (onPreview) onPreview(file)
-    else setPreviewFile(file)
+    if (locked || isVerifying) return
+
+    tapAttemptRef.current += 1
+    const current = tapAttemptRef.current
+
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+    resetTimerRef.current = setTimeout(() => {
+      tapAttemptRef.current = 0
+    }, 600)
+
+    if (current < 2) return
+
+    tapAttemptRef.current = 0
+    setIsVerifying(true)
+    setTimeout(() => {
+      setIsVerifying(false)
+      if (onPreview) onPreview(file)
+      else setPreviewFile(file)
+    }, 1800)
   }
 
   const handleDownload = (e: React.MouseEvent) => {
@@ -49,7 +70,7 @@ export function FileRow({
       onClick={handlePreview}
       className={`group flex items-center gap-3 py-2.5 px-2 -mx-2 rounded-xl transition-colors ${
         locked ? '' : 'cursor-pointer hover:bg-subtle'
-      }`}
+      } ${isVerifying ? 'opacity-50 animate-pulse cursor-wait pointer-events-none' : ''}`}
     >
       <FileIcon name={file.name} />
 
