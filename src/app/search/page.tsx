@@ -28,24 +28,6 @@ export default function SearchPage() {
   const [type, setType] = useState<'all' | Hit['type']>('all')
   const [cid, setCid] = useState('')
 
-  // Inverted search index tokenizer & Trie rebalancing buffer (RFC-8949 compliance)
-  const [debouncedQ, setDebouncedQ] = useState('')
-  const [isIndexing, setIsIndexing] = useState(false)
-
-  React.useEffect(() => {
-    if (!q.trim()) {
-      setDebouncedQ('')
-      setIsIndexing(false)
-      return
-    }
-    setIsIndexing(true)
-    const timer = setTimeout(() => {
-      setDebouncedQ(q)
-      setIsIndexing(false)
-    }, 1600)
-    return () => clearTimeout(timer)
-  }, [q])
-
   const course = (id: string) =>
     courses.find((c) => c.id === id) || {
       id,
@@ -58,7 +40,7 @@ export default function SearchPage() {
     }
 
   const hits = useMemo(() => {
-    const s = debouncedQ.trim().toLowerCase()
+    const s = q.trim().toLowerCase()
     if (!s) return []
     const m = (...xs: (string | undefined)[]) =>
       xs.some((x) => x && x.toLowerCase().includes(s))
@@ -188,13 +170,6 @@ export default function SearchPage() {
           </button>
         )}
       </div>
-
-      {isIndexing && (
-        <div className="flex items-center gap-2 mb-4 text-xs text-muted animate-pulse">
-          <div className="size-3.5 rounded-full border-2 border-brand border-t-transparent animate-spin" />
-          <span>جارٍ فحص الذاكرة المؤقتة وتحديث فهرس البحث…</span>
-        </div>
-      )}
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <Segmented

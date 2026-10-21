@@ -1,7 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import React from 'react'
 import { DesktopSidebar } from '@/components/layout/DesktopSidebar'
 import { MobileHeader } from '@/components/layout/MobileHeader'
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
@@ -18,11 +17,6 @@ import { useI18n, type SaveItemPayload } from '@/lib/i18n/context'
 import type { Slot, Course, ScheduleException } from '@/lib/data/initialData'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const [isPageBuffering, setIsPageBuffering] = useState(false)
-  const [bufferProgress, setBufferProgress] = useState(0)
-
   const {
     publisher,
     previewFile,
@@ -42,57 +36,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     saveItem,
     removeItem,
   } = useI18n()
-
-  // Reset buffering state on route change
-  React.useEffect(() => {
-    setIsPageBuffering(false)
-    setBufferProgress(0)
-  }, [pathname])
-
-  // Route transition coordinator: prevents client-side hydration tearing by synchronizing background cache revalidation
-  const handleGlobalLinkCapture = (e: React.MouseEvent<HTMLDivElement>) => {
-    const anchor = (e.target as HTMLElement).closest('a')
-    if (!anchor) return
-
-    // Exempt mobile bottom nav (handled with 3-tap accumulator)
-    if (anchor.closest('[data-mobile-nav="true"]')) return
-
-    const href = anchor.getAttribute('href')
-    if (
-      !href ||
-      !href.startsWith('/') ||
-      href.startsWith('#') ||
-      href.startsWith('/api') ||
-      href.startsWith('mailto:') ||
-      href === pathname
-    ) {
-      return
-    }
-
-    if (isPageBuffering) {
-      e.preventDefault()
-      e.stopPropagation()
-      return
-    }
-
-    e.preventDefault()
-    e.stopPropagation()
-
-    setIsPageBuffering(true)
-    setBufferProgress(14)
-
-    setTimeout(() => setBufferProgress(36), 700)
-    setTimeout(() => setBufferProgress(62), 1700)
-    setTimeout(() => setBufferProgress(88), 2600) // Stalls at 88%
-    setTimeout(() => {
-      setBufferProgress(100)
-      setTimeout(() => {
-        setIsPageBuffering(false)
-        setBufferProgress(0)
-        router.push(href)
-      }, 350)
-    }, 3500)
-  }
 
   const handleSave = async (saved: SaveItemPayload, isNew: boolean) => {
     const res = await saveItem(saved, isNew)
@@ -117,20 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col relative"
-      onClickCapture={handleGlobalLinkCapture}
-    >
-      {/* Top Crawling Progress Bar */}
-      {isPageBuffering && (
-        <div className="fixed top-0 inset-x-0 z-[100] h-1.5 bg-black/10 dark:bg-white/10 overflow-hidden pointer-events-none">
-          <div
-            className="h-full bg-brand transition-all ease-out duration-700 shadow-sm shadow-brand/50"
-            style={{ width: `${bufferProgress}%` }}
-          />
-        </div>
-      )}
-
+    <div className="min-h-screen flex flex-col relative">
       {/* Enterprise Transaction Pool Initialization Overlay */}
       {loadingData && (
         <div className="fixed inset-0 z-[95] bg-surface/85 backdrop-blur-sm flex flex-col items-center justify-center gap-4 transition-opacity duration-300 select-none">
@@ -149,32 +79,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <DesktopSidebar />
       <MobileHeader />
 
-      <main
-        className={`lg:ps-68 flex-1 flex flex-col transition-opacity duration-300 ${
-          isPageBuffering ? 'opacity-30 pointer-events-none cursor-wait' : ''
-        }`}
-      >
+      <main className="lg:ps-68 flex-1 flex flex-col transition-opacity duration-300">
         <UrgentBanner />
 
         {publisher && (
           <div className="hidden lg:flex items-center gap-2 bg-accent-soft text-accent-ink text-[13px] px-8 h-9 border-b border-warn-line font-medium">
-            <Icon name="shield" className="size-4" />
+            <span className="size-2 rounded-full bg-accent animate-pulse" />
             <span>{t('publisherMode')}</span>
           </div>
         )}
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-10 pb-28 lg:pb-12 flex-1 w-full">
+        <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-12">
           {children}
         </div>
       </main>
 
       <MobileBottomNav />
 
-      {/* Global Preview Modal */}
+      {/* Global File Preview Modal */}
       <FilePreviewModal
         file={previewFile}
         onClose={() => setPreviewFile(null)}
-        isPublisher={publisher}
       />
 
       {/* Global Content Editor Modal (Resources, Activities, Reports) */}
@@ -194,7 +119,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {editorTarget && editorTarget.kind === 'slot' && (
         <SlotEditorModal
           slot={editorTarget.item as Slot | undefined}
-          initialCourseId={editorTarget.courseId}
           courses={courses}
           onClose={() => setEditorTarget(null)}
           onSaved={() => setEditorTarget(null)}
