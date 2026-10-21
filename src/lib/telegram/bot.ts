@@ -60,16 +60,28 @@ export async function sendTelegramMessage(
   }
 }
 
-export function buildWebAppKeyboard(buttonText: string, subPath = '') {
+export function buildWebAppKeyboard(buttonText: string, subPath = '', isPrivate = false) {
   const fullUrl = `${PLATFORM_BASE_URL}${subPath.startsWith('/') ? subPath : `/${subPath}`}`
+  if (isPrivate) {
+    return {
+      inline_keyboard: [
+        [
+          {
+            text: buttonText,
+            web_app: {
+              url: fullUrl,
+            },
+          },
+        ],
+      ],
+    }
+  }
   return {
     inline_keyboard: [
       [
         {
           text: buttonText,
-          web_app: {
-            url: fullUrl,
-          },
+          url: fullUrl,
         },
       ],
     ],
@@ -86,7 +98,7 @@ export async function sendChannelBroadcast(
     return { ok: false, description: 'No channel configured. Invite bot as Admin to channel first.' }
   }
 
-  const reply_markup = buildWebAppKeyboard(buttonLabel, webAppSubPath)
+  const reply_markup = buildWebAppKeyboard(buttonLabel, webAppSubPath, false)
   return await sendTelegramMessage(channelId, text, {
     parse_mode: 'HTML',
     reply_markup,
@@ -209,3 +221,4 @@ export function formatMorningBriefing(
   msg += `نتمنى لكم يوماً دراسياً موفقاً! ✨`
   return msg
 }
+
