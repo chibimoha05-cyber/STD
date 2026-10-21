@@ -12,7 +12,7 @@ export async function updateSession(request: NextRequest) {
     !pathname.startsWith('/_next/') &&
     !pathname.includes('.')
   ) {
-    await new Promise((resolve) => setTimeout(resolve, 2200))
+    await new Promise((resolve) => setTimeout(resolve, 750))
   }
 
   let supabaseResponse = NextResponse.next({

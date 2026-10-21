@@ -336,26 +336,26 @@ export interface PlatformAcademicData {
  * Parallel queries on unprimed client sockets trigger browser-level TCP dropouts (TypeError: Failed to fetch).
  * Queries are queued with micro-stagger intervals to protect downstream pooled transactions.
  */
-const waitConnectionSlot = (ms = 260) => new Promise((resolve) => setTimeout(resolve, ms))
+const waitConnectionSlot = (ms = 120) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export async function fetchFullPlatformData(
   client?: SupabaseClient<Database>
 ): Promise<PlatformAcademicData> {
   // Serialized query waterfall to prevent exhausting pgBouncer connection limits on free tier
   const courses = await fetchCourses(client)
-  await waitConnectionSlot(550)
+  await waitConnectionSlot(120)
 
   const slots = await fetchSlots(client)
-  await waitConnectionSlot(550)
+  await waitConnectionSlot(120)
 
   const exceptions = await fetchScheduleExceptions(client)
-  await waitConnectionSlot(550)
+  await waitConnectionSlot(120)
 
   const resources = await fetchResources(client)
-  await waitConnectionSlot(550)
+  await waitConnectionSlot(120)
 
   const activities = await fetchActivities(client)
-  await waitConnectionSlot(550)
+  await waitConnectionSlot(120)
 
   const reports = await fetchReports(client)
 

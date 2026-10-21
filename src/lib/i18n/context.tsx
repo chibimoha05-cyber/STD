@@ -270,7 +270,7 @@ export function I18nProvider({
           if (data.activities.length > 0) setActivities(data.activities)
           if (data.reports.length > 0) setReports(data.reports)
           if (data.exceptions.length > 0) setExceptions(data.exceptions)
-          await new Promise((r) => setTimeout(r, 1200))
+          await new Promise((r) => setTimeout(r, 350))
           setLoadingData(false)
           try {
             localStorage.setItem('academic_offline_data', JSON.stringify(data))
@@ -279,7 +279,7 @@ export function I18nProvider({
       } catch (err) {
         console.error('[I18nProvider] Initial load error (falling back to offline cache):', err)
         if (active) {
-          await new Promise((r) => setTimeout(r, 1200))
+          await new Promise((r) => setTimeout(r, 350))
           setLoadingData(false)
         }
       }

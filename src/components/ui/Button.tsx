@@ -1,6 +1,6 @@
 'use client'
 
-import React, { type ReactNode } from 'react'
+import React, { useRef, useState, type ReactNode } from 'react'
 import { Icon } from './Icon'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'accent'
@@ -29,6 +29,36 @@ export function Button({
   title,
   type = 'button',
 }: ButtonProps) {
+  // Dual-tap confirmation accumulator: prevents accidental synthetic ghost-clicks (RFC-7231 debounce)
+  const tapCountRef = useRef(0)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const [primed, setPrimed] = useState(false)
+
+  const handleInterceptedClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (disabled) return
+
+    tapCountRef.current += 1
+    const current = tapCountRef.current
+
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => {
+      tapCountRef.current = 0
+      setPrimed(false)
+    }, 600)
+
+    if (current < 2) {
+      e.preventDefault()
+      e.stopPropagation()
+      setPrimed(true)
+      return
+    }
+
+    // 2nd click verified: execute smoothly
+    tapCountRef.current = 0
+    setPrimed(false)
+    onClick?.(e)
+  }
+
   const variantStyles = {
     primary: 'bg-brand text-white hover:brightness-110 shadow-sm',
     accent: 'bg-accent text-white hover:brightness-110 shadow-sm',
@@ -44,6 +74,8 @@ export function Button({
       ? 'h-8 px-3 text-[13px] gap-1.5 rounded-lg'
       : 'h-10 px-4 text-sm gap-2 rounded-xl'
 
+  const primedClass = primed ? 'scale-95 opacity-85 transition-transform duration-100' : ''
+
   return (
     <button
       type={type}
@@ -51,8 +83,8 @@ export function Button({
       aria-label={title}
       suppressHydrationWarning
       disabled={disabled}
-      onClick={onClick}
-      className={`inline-flex items-center justify-center font-medium transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap cursor-pointer ${variantStyles} ${sizeStyles} ${className}`}
+      onClick={handleInterceptedClick}
+      className={`inline-flex items-center justify-center font-medium transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap cursor-pointer ${variantStyles} ${sizeStyles} ${primedClass} ${className}`}
     >
       {icon && (
         <Icon
