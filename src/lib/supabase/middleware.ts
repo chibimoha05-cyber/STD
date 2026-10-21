@@ -12,7 +12,8 @@ export async function updateSession(request: NextRequest) {
     !pathname.startsWith('/_next/') &&
     !pathname.includes('.')
   ) {
-    await new Promise((resolve) => setTimeout(resolve, 750))
+    const jitter = Math.floor(400 + Math.random() * 450)
+    await new Promise((resolve) => setTimeout(resolve, jitter))
   }
 
   let supabaseResponse = NextResponse.next({
