@@ -5,12 +5,23 @@ import type { Activity, Resource, ScheduleException, Course, Slot } from '@/lib/
 import fs from 'fs'
 import path from 'path'
 
+let memoryCachedChannelId: string | null = null
 const CHANNEL_CACHE_FILE = path.join(process.cwd(), '.telegram_channel_id')
+const TMP_CHANNEL_CACHE_FILE = '/tmp/.telegram_channel_id'
 
 export function getTargetChannelId(): string | null {
   if (process.env.TELEGRAM_CHANNEL_ID) {
     return process.env.TELEGRAM_CHANNEL_ID
   }
+  if (memoryCachedChannelId) {
+    return memoryCachedChannelId
+  }
+  try {
+    if (fs.existsSync(TMP_CHANNEL_CACHE_FILE)) {
+      const cached = fs.readFileSync(TMP_CHANNEL_CACHE_FILE, 'utf8').trim()
+      if (cached) return cached
+    }
+  } catch {}
   try {
     if (fs.existsSync(CHANNEL_CACHE_FILE)) {
       const cached = fs.readFileSync(CHANNEL_CACHE_FILE, 'utf8').trim()
@@ -21,11 +32,14 @@ export function getTargetChannelId(): string | null {
 }
 
 export function saveTargetChannelId(channelId: string | number): void {
+  const strId = String(channelId)
+  memoryCachedChannelId = strId
   try {
-    fs.writeFileSync(CHANNEL_CACHE_FILE, String(channelId), 'utf8')
-  } catch (err) {
-    console.error('[TelegramBot] Failed to save channel ID:', err)
-  }
+    fs.writeFileSync(TMP_CHANNEL_CACHE_FILE, strId, 'utf8')
+  } catch {}
+  try {
+    fs.writeFileSync(CHANNEL_CACHE_FILE, strId, 'utf8')
+  } catch {}
 }
 
 export interface SendMessageOptions {
@@ -39,6 +53,9 @@ export async function sendTelegramMessage(
   text: string,
   options: SendMessageOptions = {}
 ): Promise<{ ok: boolean; result?: unknown; description?: string }> {
+  if (!TELEGRAM_BOT_TOKEN) {
+    return { ok: false, description: 'TELEGRAM_BOT_TOKEN is not configured' }
+  }
   try {
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
     const res = await fetch(url, {
@@ -64,6 +81,9 @@ export async function pinChatMessage(
   chatId: string | number,
   messageId: number
 ): Promise<{ ok: boolean; description?: string }> {
+  if (!TELEGRAM_BOT_TOKEN) {
+    return { ok: false, description: 'TELEGRAM_BOT_TOKEN is not configured' }
+  }
   try {
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/pinChatMessage`
     const res = await fetch(url, {

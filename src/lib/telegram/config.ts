@@ -1,7 +1,6 @@
 // Telegram Bot Configuration for Academic Platform & Channel Integration
 
-export const TELEGRAM_BOT_TOKEN =
-  process.env.TELEGRAM_BOT_TOKEN || '8720103626:AAExTckkGTQGdJHVgkZ0_GAhv9jkWECJgDA'
+export const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 
 export const DEFAULT_ADMIN_IDS = [
   '1669700577', // Main Admin (Owner)
