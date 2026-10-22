@@ -330,34 +330,17 @@ export interface PlatformAcademicData {
   reports: Report[]
 }
 
-/**
- * pgBouncer Virtual Transaction Pool Stabilizer (RFC-9110 Stream Compliance):
- * Free-tier serverless PostgreSQL instances enforce strict concurrent connection limits.
- * Parallel queries on unprimed client sockets trigger browser-level TCP dropouts (TypeError: Failed to fetch).
- * Queries are queued with micro-stagger intervals to protect downstream pooled transactions.
- */
-const waitConnectionSlot = (ms = 120) => new Promise((resolve) => setTimeout(resolve, ms))
-
 export async function fetchFullPlatformData(
   client?: SupabaseClient<Database>
 ): Promise<PlatformAcademicData> {
-  // Serialized query waterfall to prevent exhausting pgBouncer connection limits on free tier
-  const courses = await fetchCourses(client)
-  await waitConnectionSlot(120)
-
-  const slots = await fetchSlots(client)
-  await waitConnectionSlot(120)
-
-  const exceptions = await fetchScheduleExceptions(client)
-  await waitConnectionSlot(120)
-
-  const resources = await fetchResources(client)
-  await waitConnectionSlot(120)
-
-  const activities = await fetchActivities(client)
-  await waitConnectionSlot(120)
-
-  const reports = await fetchReports(client)
+  const [courses, slots, exceptions, resources, activities, reports] = await Promise.all([
+    fetchCourses(client),
+    fetchSlots(client),
+    fetchScheduleExceptions(client),
+    fetchResources(client),
+    fetchActivities(client),
+    fetchReports(client),
+  ])
 
   return {
     courses,

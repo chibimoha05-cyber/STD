@@ -1,76 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isTelegramAdmin, getAdminIds } from '@/lib/telegram/config'
 import {
   sendTelegramMessage,
   pinChatMessage,
-  sendChannelBroadcast,
-  saveTargetChannelId,
   buildWebAppKeyboard,
-  formatMorningBriefing,
+  saveTargetChannelId,
 } from '@/lib/telegram/bot'
-import { fetchCourses, fetchSlots, fetchScheduleExceptions, fetchActivities } from '@/lib/data/academic'
-import { getDaySchedule } from '@/lib/utils/schedule'
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
-    // 1. Listen for Bot being added to Channel / Group as Administrator or Member
+    // 1. When Bot is added to a Group or Channel (or promoted to admin)
     if (body.my_chat_member?.chat) {
       const chat = body.my_chat_member.chat
       const status = body.my_chat_member.new_chat_member?.status
-
-      if (status === 'administrator' || status === 'member') {
+      if (status === 'member' || status === 'administrator') {
         saveTargetChannelId(chat.id)
 
-        // Send confirmation announcement to the group/channel
-        const welcomeRes = await sendTelegramMessage(
+        const res = await sendTelegramMessage(
           chat.id,
           `🎓 <b>المنصة الأكاديمية – قسم علوم الحاسبات</b>\n\n` +
-            `أهلاً بكم يا شباب! تم ربط وتفعيل البوت الأكاديمي الرسمي في المجموعة بنجاح. ✨\n\n` +
-            `سيتم نشر التحديثات والملازم ومواعيد الامتحانات هنا تلقائياً عند النشر في المنصة.\n` +
-            `يمكنكم فتح المنصة الأكاديمية في أي وقت من الزر أدناه 👇\n\n` +
-            `📌 <i>تنبيه للمشرفين: يرجى تثبيت (Pin) هذه الرسالة لتكون مرجعاً دائماً أعلى المحادثة.</i>`,
+            `أهلاً بكم في المنصة الأكاديمية الرسمية.\n` +
+            `اضغطوا على الزر أدناه لفتح المنصة مباشرة 👇`,
           {
-            reply_markup: buildWebAppKeyboard('🚀 فتح المنصة الأكاديمية', '/courses/c4', false),
+            reply_markup: buildWebAppKeyboard('Open', '', false),
           }
         )
 
-        // Attempt automatic pin if administrator permissions allow
-        if (welcomeRes.ok && welcomeRes.result && typeof welcomeRes.result === 'object' && 'message_id' in welcomeRes.result) {
-          const msgId = (welcomeRes.result as { message_id: number }).message_id
+        if (res.ok && res.result && typeof res.result === 'object' && 'message_id' in res.result) {
+          const msgId = (res.result as { message_id: number }).message_id
           await pinChatMessage(chat.id, msgId).catch(() => {})
         }
-
-        // Notify Admins
-        const adminIds = getAdminIds()
-        for (const adminId of adminIds) {
-          await sendTelegramMessage(
-            adminId,
-            `📢 <b>تنبيه الإدارة:</b>\nتمت إضافة البوت إلى مجموعة جديدة بنجاح!\n` +
-              `🏷️ <b>اسم المجموعة:</b> ${chat.title || 'بدون اسم'}\n` +
-              `🆔 <b>معرف المجموعة:</b> <code>${chat.id}</code>\n` +
-              `🛡️ <b>الحالة:</b> ${status === 'administrator' ? 'مسؤول (Admin)' : 'عضو (Member)'}`
-          )
-        }
-
-        return NextResponse.json({ ok: true })
       }
+      return NextResponse.json({ ok: true })
     }
 
-    // 2. Handle Text Messages, New Members & Commands
+    // 2. Incoming messages in Private chat or Groups
     if (body.message) {
       const msg = body.message
       const chatId = msg.chat?.id
       if (!chatId) return NextResponse.json({ ok: true })
 
       const isGroup = msg.chat.type === 'group' || msg.chat.type === 'supergroup'
-      const rawText = msg.text || ''
-      const text = rawText.trim().toLowerCase()
-      const userId = msg.from?.id
-      const isAdmin = userId ? isTelegramAdmin(userId) : false
+      const text = (msg.text || '').trim().toLowerCase()
 
-      // Case A: When bot is newly invited to a group by an admin/student
+      // When bot is newly added to a group via user invite
       if (isGroup && Array.isArray(msg.new_chat_members)) {
         const isBotAdded = msg.new_chat_members.some(
           (u: { is_bot?: boolean; username?: string }) =>
@@ -81,11 +55,10 @@ export async function POST(req: NextRequest) {
           const res = await sendTelegramMessage(
             chatId,
             `🎓 <b>المنصة الأكاديمية – قسم علوم الحاسبات</b>\n\n` +
-              `أهلاً بكم في المنصة الأكاديمية الرسمية. مرحباً بكم جميعاً!\n\n` +
-              `اضغطوا على الزر أدناه لفتح المنصة ومتابعة المحاضرات والملازم والامتحانات مباشرة 👇\n\n` +
-              `📌 <i>يرجى تثبيت (Pin) هذه الرسالة لتكون مرجعاً دائماً أعلى المحادثة.</i>`,
+              `أهلاً بكم في المنصة الأكاديمية الرسمية.\n` +
+              `اضغطوا على الزر أدناه لفتح المنصة ومتابعة المحاضرات والملازم مباشرة 👇`,
             {
-              reply_markup: buildWebAppKeyboard('🚀 فتح المنصة الأكاديمية', '/courses/c4', false),
+              reply_markup: buildWebAppKeyboard('Open', '', false),
             }
           )
           if (res.ok && res.result && typeof res.result === 'object' && 'message_id' in res.result) {
@@ -96,157 +69,29 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Case B: Handle specific text commands
-      if (rawText) {
-        // Command: /id or /myid
-        if (text.startsWith('/id') || text.startsWith('/myid')) {
-          const roleText = isAdmin ? 'مسؤول معتمد (Admin) 👑' : 'طالب (Student) 🎓'
-          await sendTelegramMessage(
-            chatId,
-            `🆔 <b>معرف تيليجرام الخاص بك:</b> <code>${userId}</code>\n` +
-              `👤 <b>الاسم:</b> ${msg.from?.first_name || ''} ${msg.from?.last_name || ''}\n` +
-              `🛡️ <b>الرتبة:</b> ${roleText}`
-          )
-          return NextResponse.json({ ok: true })
+      // In groups: respond if message starts with /start, /open, or mentions the bot
+      // In private: respond to any message or /start
+      const shouldRespond =
+        !isGroup ||
+        text.startsWith('/start') ||
+        text.startsWith('/open') ||
+        text.includes('@computerac_bot')
+
+      if (shouldRespond) {
+        if (isGroup) {
+          saveTargetChannelId(chatId)
         }
 
-        // Command: /start or /open or bot mention
-        if (
-          text.startsWith('/start') ||
-          text.startsWith('/open') ||
-          text.includes('@computerac_bot')
-        ) {
-          // If in a group, save group ID and reply with pin-ready card
-          if (isGroup) {
-            saveTargetChannelId(chatId)
-
-            const pinRes = await sendTelegramMessage(
-              chatId,
-              `🎓 <b>المنصة الأكاديمية – قسم علوم الحاسبات</b>\n\n` +
-                `أهلاً بكم يا طلبة قسم علوم الحاسبات! مرحباً بكم في المنصة الأكاديمية.\n\n` +
-                `اضغطوا على الزر أدناه لفتح المنصة ومتابعة المحاضرات والملخصات والامتحانات مباشرة 👇\n\n` +
-                `📌 <i>يرجى تثبيت (Pin) هذه الرسالة لتظهر لجميع الطلبة في أعلى المجموعة.</i>`,
-              {
-                reply_markup: buildWebAppKeyboard('🚀 فتح المنصة الأكاديمية', '/courses/c4', false),
-              }
-            )
-
-            if (pinRes.ok && pinRes.result && typeof pinRes.result === 'object' && 'message_id' in pinRes.result) {
-              const msgId = (pinRes.result as { message_id: number }).message_id
-              await pinChatMessage(chatId, msgId).catch(() => {})
-            }
-
-            return NextResponse.json({ ok: true })
+        await sendTelegramMessage(
+          chatId,
+          `🎓 <b>المنصة الأكاديمية – قسم علوم الحاسبات</b>\n\n` +
+            `أهلاً بكم في المنصة الأكاديمية الرسمية.\n` +
+            `اضغطوا على الزر أدناه لفتح المنصة ومتابعة المحاضرات والملازم والامتحانات مباشرة 👇`,
+          {
+            reply_markup: buildWebAppKeyboard('Open', '', !isGroup),
           }
-
-          // Private chat
-          if (isAdmin) {
-            await sendTelegramMessage(
-              chatId,
-              `👋 <b>أهلاً بك يا أدمن (${msg.from?.first_name})!</b> 👑\n\n` +
-                `أنت مصرح لك بنشر الإعلانات وإدارة تنبيهات القناة.\n\n` +
-                `<b>الأوامر المتاحة لك:</b>\n` +
-                `📢 <code>/post [نص الإعلان]</code> - نشر إعلان فوري بالقناة\n` +
-                `☀️ <code>/today</code> - عرض محاضرات اليوم\n` +
-                `📝 <code>/exams</code> - عرض الامتحانات القادمة\n` +
-                `🆔 <code>/id</code> - عرض معرفك الرقمي`,
-              {
-                reply_markup: buildWebAppKeyboard('🚀 فتح المنصة الأكاديمية', '/courses/c4', true),
-              }
-            )
-          } else {
-            await sendTelegramMessage(
-              chatId,
-              `🎓 <b>أهلاً بك في بوت المنصة الأكاديمية!</b>\n\n` +
-                `تابع جدول المحاضرات، تنبيهات القاعات، والواجبات مباشرة من تيليجرام.\n` +
-                `اضغط الزر أدناه لفتح المنصة 👇`,
-              {
-                reply_markup: buildWebAppKeyboard('🚀 فتح المنصة الأكاديمية', '/courses/c4', true),
-              }
-            )
-          }
-          return NextResponse.json({ ok: true })
-        }
-
-        // Command: /post [announcement text] (Admins Only)
-        if (text.startsWith('/post')) {
-          if (!isAdmin) {
-            await sendTelegramMessage(chatId, `⚠️ <b>عذراً:</b> هذا الأمر مخصص لمسؤولي المرحلة فقط.`)
-            return NextResponse.json({ ok: true })
-          }
-
-          const announcementText = rawText.replace(/^\/post\s*/i, '').trim()
-          if (!announcementText) {
-            await sendTelegramMessage(
-              chatId,
-              `⚠️ يرجى كتابة نص الإعلان بعد الأمر.\n\n<b>مثال:</b>\n<code>/post امتحان الشهر الثاني لمادة قواعد البيانات الأحد القادم في قاعة 2</code>`
-            )
-            return NextResponse.json({ ok: true })
-          }
-
-          const formatted =
-            `📢 <b>إعلان رسمي من إدارة المرحلة</b>\n` +
-            `━━━━━━━━━━━━━━━━━━━━━\n\n` +
-            `${announcementText}\n\n` +
-            `━━━━━━━━━━━━━━━━━━━━━\n` +
-            `✍️ <i>بواسطة: ${msg.from?.first_name || 'مسؤول'}</i>`
-
-          const broadcastRes = await sendChannelBroadcast(formatted, '/courses/c4', '📱 فتح المنصة')
-          if (broadcastRes.ok) {
-            await sendTelegramMessage(chatId, `✅ <b>تم نشر الإعلان في القناة بنجاح!</b>`)
-          } else {
-            await sendTelegramMessage(
-              chatId,
-              `❌ <b>فشل النشر:</b> ${broadcastRes.description || 'تأكد من إضافة البوت كأدمن في القناة أولاً.'}`
-            )
-          }
-          return NextResponse.json({ ok: true })
-        }
-
-        // Command: /today
-        if (text.startsWith('/today') || text.includes('محاضرات اليوم')) {
-          const [courses, slots, exceptions] = await Promise.all([
-            fetchCourses(),
-            fetchSlots(),
-            fetchScheduleExceptions(),
-          ])
-          const todaySlots = getDaySchedule(0, slots, exceptions)
-          const mapped = todaySlots.map((s) => ({
-            slot: s,
-            course: courses.find((c) => c.id === s.courseId),
-            ex: s.ex,
-          }))
-
-          const briefing = formatMorningBriefing(mapped)
-          await sendTelegramMessage(chatId, briefing, {
-            reply_markup: buildWebAppKeyboard('📅 عرض الجدول الكامل', '/schedule'),
-          })
-          return NextResponse.json({ ok: true })
-        }
-
-        // Command: /exams
-        if (text.startsWith('/exams') || text.includes('الامتحانات')) {
-          const [courses, activities] = await Promise.all([fetchCourses(), fetchActivities()])
-          const exams = activities
-            .filter((a) => a.kind === 'exam' && a.due >= 0)
-            .sort((a, b) => a.due - b.due)
-
-          if (!exams.length) {
-            await sendTelegramMessage(chatId, `🎉 <b>لا توجد امتحانات قادمة قريبة!</b>`)
-          } else {
-            let msgText = `<b>📝 جدول الامتحانات القادمة</b>\n━━━━━━━━━━━━━━━━━━━━━\n\n`
-            for (const ex of exams) {
-              const course = courses.find((c) => c.id === ex.courseId)
-              const courseName = course ? course.name.ar : ex.courseId
-              msgText += `📌 <b>${courseName}</b> - ${ex.title.ar}\n`
-              msgText += `   🗓️ بعد ${ex.due} أيام${ex.time ? ` (${ex.time})` : ''} | 📍 ${ex.place.ar || 'القاعة'}\n\n`
-            }
-            await sendTelegramMessage(chatId, msgText, {
-              reply_markup: buildWebAppKeyboard('📖 فتح قسم الامتحانات', '/activities'),
-            })
-          }
-          return NextResponse.json({ ok: true })
-        }
+        )
+        return NextResponse.json({ ok: true })
       }
     }
 
