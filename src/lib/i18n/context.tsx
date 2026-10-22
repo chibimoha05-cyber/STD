@@ -118,6 +118,7 @@ interface I18nContextType {
   exceptions: ScheduleException[]
   setExceptions: React.Dispatch<React.SetStateAction<ScheduleException[]>>
 
+  isOffline: boolean
   loadingData: boolean
   refreshData: () => Promise<void>
 
@@ -240,6 +241,22 @@ export function I18nProvider({
     }
   }, [lang, router, showToast])
 
+  const [isOffline, setIsOffline] = useState(false)
+
+  // Monitor network connectivity for seamless offline PWA & Telegram WebApp operation
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    setIsOffline(!navigator.onLine)
+    const handleOnline = () => setIsOffline(false)
+    const handleOffline = () => setIsOffline(true)
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
   useEffect(() => {
     let active = true
 
@@ -256,6 +273,7 @@ export function I18nProvider({
             if (parsed.activities) setActivities(parsed.activities)
             if (parsed.reports) setReports(parsed.reports)
             if (parsed.exceptions) setExceptions(parsed.exceptions)
+            setLoadingData(false)
           }
         } catch {}
       }
@@ -571,6 +589,7 @@ export function I18nProvider({
       setReports,
       exceptions,
       setExceptions,
+      isOffline,
       loadingData,
       refreshData,
       saveItem,
@@ -607,6 +626,7 @@ export function I18nProvider({
       activities,
       reports,
       exceptions,
+      isOffline,
       loadingData,
       refreshData,
       saveItem,
