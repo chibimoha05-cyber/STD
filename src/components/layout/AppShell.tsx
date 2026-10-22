@@ -9,6 +9,7 @@ import { ContentEditorModal, type ContentEditorTarget } from '@/components/publi
 import { SlotEditorModal } from '@/components/publisher/SlotEditorModal'
 import { CourseEditorModal } from '@/components/publisher/CourseEditorModal'
 import { ScheduleExceptionModal } from '@/components/publisher/ScheduleExceptionModal'
+import { UrgentBanner } from '@/components/layout/UrgentBanner'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
@@ -31,7 +32,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     t,
     L,
     lang,
-    isOffline,
     loadingData,
     saveItem,
     removeItem,
@@ -80,17 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <MobileHeader />
 
       <main className="lg:ps-68 flex-1 flex flex-col transition-opacity duration-300">
-        {isOffline && (
-          <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs py-1.5 px-4 text-center font-medium flex items-center justify-center gap-1.5">
-            <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
-            <span>
-              {lang === 'ar'
-                ? 'وضع التصفح بدون إنترنت (أوفلاين) – يتم عرض البيانات المحفوظة محلياً'
-                : 'Offline Mode – Displaying locally cached data'}
-            </span>
-          </div>
-        )}
-
+        <UrgentBanner />
         {publisher && (
           <div className="hidden lg:flex items-center gap-2 bg-accent-soft text-accent-ink text-[13px] px-8 h-9 border-b border-warn-line font-medium">
             <span className="size-2 rounded-full bg-accent animate-pulse" />

@@ -26,16 +26,16 @@ export function TelegramProvider() {
       window.addEventListener('load', initTelegram)
     }
 
-    // 2. Register Service Worker for offline support
-    if (
-      'serviceWorker' in navigator &&
-      (window.location.protocol === 'https:' ||
-        window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1')
-    ) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
-        // Silently ignore if not supported or blocked
-      })
+    // 2. Unregister any service workers to ensure clean live network execution
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => {
+          for (const registration of registrations) {
+            registration.unregister()
+          }
+        })
+        .catch(() => {})
     }
   }, [])
 
