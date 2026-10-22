@@ -346,7 +346,10 @@ export function I18nProvider({
           const today = new Date()
           const dueOffsetDays = entry.item.due ?? 3
           const dueDateObj = new Date(today.getTime() + dueOffsetDays * 86400000)
-          const dueDateStr = dueDateObj.toISOString().split('T')[0]
+          const dy = dueDateObj.getFullYear()
+          const dm = String(dueDateObj.getMonth() + 1).padStart(2, '0')
+          const dd = String(dueDateObj.getDate()).padStart(2, '0')
+          const dueDateStr = `${dy}-${dm}-${dd}`
 
           const res = await saveActivityAction({
             id: isNew ? undefined : entry.item.id,

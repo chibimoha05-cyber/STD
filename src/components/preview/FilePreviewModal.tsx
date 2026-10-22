@@ -11,6 +11,29 @@ import { useI18n } from '@/lib/i18n/context'
 import { isValidUUID } from '@/lib/utils/uuid'
 import { PdfViewer } from '@/components/preview/PdfViewer'
 
+function downloadFileItem(file: FileItem, downloadUrl: string, isReal: boolean) {
+  if (!isReal) {
+    const content = `[ملف أكاديمي تجريبي: ${file.name}]\n[Demo Academic File: ${file.name}]\n\nالحجم / Size: ${file.size}\nنوع الوصول / Access: ${file.access}\nهذا الملف نموذجي مخصص للمعاينة التجريبية في المنصة.`
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = file.name.includes('.') ? file.name : `${file.name}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    return
+  }
+
+  const a = document.createElement('a')
+  a.href = downloadUrl
+  a.download = file.name
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
+
 function FilePreviewBody({
   file,
   previewUrl,
@@ -33,12 +56,7 @@ function FilePreviewBody({
   const isVideo = ['mp4', 'webm'].includes(ext)
 
   const handleDownload = () => {
-    const a = document.createElement('a')
-    a.href = downloadUrl
-    a.download = file.name
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+    downloadFileItem(file, downloadUrl, isReal)
   }
 
   if (loadError) {
@@ -198,12 +216,7 @@ export function FilePreviewModal({
   const downloadUrl = `/api/attachments/${file.id}/download`
 
   const handleDownload = () => {
-    const a = document.createElement('a')
-    a.href = downloadUrl
-    a.download = file.name
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+    downloadFileItem(file, downloadUrl, isReal)
   }
 
   const handleOpenInNewTab = () => {

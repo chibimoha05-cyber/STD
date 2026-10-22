@@ -9,8 +9,12 @@ export function CourseTag({
   course?: Course
   id?: string
 }) {
-  const { L } = useI18n()
-  const c = course || initialCourses.find((x) => x.id === id)
+  const { L, courses } = useI18n()
+  const c =
+    course ||
+    (courses && courses.find((x) => x.id === id)) ||
+    initialCourses.find((x) => x.id === id)
+
   if (!c) return null
 
   return (

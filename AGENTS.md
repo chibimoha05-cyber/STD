@@ -8,7 +8,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Academic Platform Engineering Directives
+# Engineering & Architecture Guidelines
 
 ## Architecture Overview
 - **Framework**: Next.js 16 (App Router with Turbopack)
@@ -17,8 +17,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **State & Data**: Offline-first via PWA Service Worker + localStorage cache, synchronized with Supabase
 - **Telegram Integration**: Telegram Bot API webhook (`/api/telegram/webhook`), channel broadcasts, and morning briefing cron (`/api/cron/morning-briefing`)
 
-## Core Performance & Quality Guidelines
-1. **Zero Artificial Latency**: Never introduce synthetic delays, click interceptors, or artificial throttling. All UI buttons and page transitions must be instantaneous and responsive on the first user interaction.
-2. **Parallel Data Fetching**: Always use parallel `Promise.all` queries for independent resources rather than serialized waterfalls.
-3. **Security & Secrets**: Never commit API keys or bot tokens in plaintext. Always read secrets from environment variables (`process.env.TELEGRAM_BOT_TOKEN`, `process.env.SUPABASE_SERVICE_ROLE_KEY`).
-4. **Honest Diagnostics**: Accurately analyze root causes based on actual code execution, network logs, and database metrics.
+## 1. High Performance & Real-time Platform
+- Ensure all database queries, API responses, and client rendering execute instantly without artificial delays or blocking operations.
+- Use concurrent fetching (`Promise.all`) for multi-resource loads.
+- Maintain clean button event handling and rapid interaction feedback.
+
+## 2. Bilingual Support (Modern Standard Arabic & English)
+- Maintain absolute linguistic integrity between Arabic (RTL) and English (LTR).
+- Do not interleave English and Arabic in the same sentence in a way that breaks punctuation or layout.
+- Ensure proper font rendering and direction attributes (`dir="rtl"` / `dir="ltr"`).
+
+## 3. Security & Access Control
+- All content authoring and mutation routes require authorized publisher credentials validated against Supabase Auth and RLS.
+- Enforce strict input validation using UUID and type guards across all Server Actions and Route Handlers.
+- Never hardcode API keys or bot tokens in plaintext. Always read secrets from environment variables (`process.env.TELEGRAM_BOT_TOKEN`, `process.env.SUPABASE_SERVICE_ROLE_KEY`).

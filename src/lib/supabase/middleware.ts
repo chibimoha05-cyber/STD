@@ -4,6 +4,7 @@ import type { Database } from './types'
 
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+
   let supabaseResponse = NextResponse.next({
     request,
   })

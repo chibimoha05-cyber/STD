@@ -50,7 +50,8 @@ export function mapSlot(row: Tables<'slots'>): Slot {
 export function mapException(row: Tables<'schedule_exceptions'>): ScheduleException {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const exDate = new Date(row.exception_date)
+  const [y, m, d] = row.exception_date.split('-').map(Number)
+  const exDate = new Date(y, m - 1, d)
   exDate.setHours(0, 0, 0, 0)
   const diffDays = Math.round((exDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
