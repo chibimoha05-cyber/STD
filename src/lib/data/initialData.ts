@@ -256,16 +256,7 @@ export const initialSlots: Slot[] = [
   { id: 's18', courseId: 'c7', weekday: 4, start: '12:30', end: '14:30', room: 'Practical G1+G2', kind: 'lab' },
 ]
 
-export const initialExceptions: ScheduleException[] = [
-  {
-    id: 'ex-off-1',
-    slotId: 's1',
-    offset: 0,
-    type: 'room',
-    room: 'Hall 3',
-    note: { ar: 'تم نقل المحاضرة إلى القاعة 3 مؤقتاً', en: 'Lecture moved to Hall 3 temporarily' },
-  },
-]
+export const initialExceptions: ScheduleException[] = []
 
 export const initialResources: Resource[] = [
   {
