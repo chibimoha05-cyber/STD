@@ -5,7 +5,7 @@ DECLARE
     sql_string TEXT;
 BEGIN
      CREATE TEMP TABLE IF NOT EXISTS temp_data_store (
-        id_col TEXT, code_col TEXT, ar_n TEXT, en_n TEXT, ar_inst TEXT, en_inst TEXT, col_val TEXT, cr_val INT, ar_d TEXT, en_d TEXT, s_ord INT
+        id_col TEXT, code_col TEXT, ar_n TEXT, en_n TEXT, ar_inst l,TEXT ,  en_inst TEXT, col_val TEXT, cr_val INT, ar_d TEXT, en_d TEXT, s_ord INT
     );
     
     DELETE FROM temp_data_store;
@@ -36,7 +36,7 @@ BEGIN
                       'credits = excluded.credits, desc_ar = excluded.desc_ar, desc_en = excluded.desc_en;';
         
         EXECUTE sql_string;
-    END LOOP;
+    end loop;
 
      INSERT INTO public.slots (course_id, weekday, start_time, end_time, room, kind) VALUES
     ('c1', 0, '08:30', '10:30', 'Hall 2', 'lecture'),
