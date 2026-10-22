@@ -117,12 +117,14 @@ export function buildWebAppKeyboard(buttonText: string, subPath = '', isPrivate 
       ],
     }
   }
+  // For Groups & Channels: Direct Mini App link opens the native in-app sheet directly inside Telegram
+  const miniAppDirectUrl = `https://t.me/ComputerAC_bot/app${subPath ? `?startapp=${encodeURIComponent(subPath.replace(/^\//, ''))}` : ''}`
   return {
     inline_keyboard: [
       [
         {
           text: buttonText,
-          url: fullUrl,
+          url: miniAppDirectUrl,
         },
       ],
     ],

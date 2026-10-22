@@ -36,7 +36,7 @@ describe('Telegram Bot Engine & Multi-Admin Security Verification', () => {
     assert.ok(kbGroup.inline_keyboard)
     const btnGroup = kbGroup.inline_keyboard[0][0] as { text: string; url: string }
     assert.strictEqual(btnGroup.text, '🚀 فتح المنصة')
-    assert.ok(btnGroup.url?.includes('/courses/c4'))
+    assert.ok(btnGroup.url?.includes('courses') && btnGroup.url?.includes('c4'))
   })
 
   it('formatActivityNotification generates structured Arabic HTML card for exams', () => {
