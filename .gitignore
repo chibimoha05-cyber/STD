@@ -24,6 +24,7 @@
 .DS_Store
 *.pem
 academic_platform_last_conversation.md
+dumb_developer_report.md
 
 # debug
 npm-debug.log*
