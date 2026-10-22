@@ -118,6 +118,7 @@ interface I18nContextType {
   exceptions: ScheduleException[]
   setExceptions: React.Dispatch<React.SetStateAction<ScheduleException[]>>
 
+  isOffline: boolean
   loadingData: boolean
   refreshData: () => Promise<void>
 
@@ -240,13 +241,44 @@ export function I18nProvider({
     }
   }, [lang, router, showToast])
 
+  const [isOffline, setIsOffline] = useState(false)
+
+  // Monitor network connectivity for seamless offline PWA & Telegram WebApp operation
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    setIsOffline(!navigator.onLine)
+    const handleOnline = () => setIsOffline(false)
+    const handleOffline = () => setIsOffline(true)
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   useEffect(() => {
     let active = true
 
     const loadInitialState = async () => {
+      // 1. Read offline cache immediately so users see content without network
+      if (typeof window !== 'undefined') {
+        try {
+          const cached = localStorage.getItem('academic_offline_data')
+          if (cached) {
+            const parsed = JSON.parse(cached)
+            if (parsed.courses && parsed.courses.length > 0) setCourses(parsed.courses)
+            if (parsed.slots && parsed.slots.length > 0) setSlots(parsed.slots)
+            if (parsed.resources) setResources(parsed.resources)
+            if (parsed.activities) setActivities(parsed.activities)
+            if (parsed.reports) setReports(parsed.reports)
+            if (parsed.exceptions) setExceptions(parsed.exceptions)
+            setLoadingData(false)
+          }
+        } catch {}
+      }
 
-      // Fetch fresh academic data
+      // 2. Fetch fresh academic data
       try {
         const data = await fetchFullPlatformData()
         if (active) {
@@ -256,13 +288,14 @@ export function I18nProvider({
           if (data.activities.length > 0) setActivities(data.activities)
           if (data.reports.length > 0) setReports(data.reports)
           if (data.exceptions.length > 0) setExceptions(data.exceptions)
-          await new Promise((r) => setTimeout(r, 350))
           setLoadingData(false)
+          try {
+            localStorage.setItem('academic_offline_data', JSON.stringify(data))
+          } catch {}
         }
       } catch (err) {
-        console.error('[I18nProvider] Initial load error:', err)
+        console.error('[I18nProvider] Initial load error (falling back to offline cache):', err)
         if (active) {
-          await new Promise((r) => setTimeout(r, 350))
           setLoadingData(false)
         }
       }
@@ -556,6 +589,7 @@ export function I18nProvider({
       setReports,
       exceptions,
       setExceptions,
+      isOffline,
       loadingData,
       refreshData,
       saveItem,
@@ -592,6 +626,7 @@ export function I18nProvider({
       activities,
       reports,
       exceptions,
+      isOffline,
       loadingData,
       refreshData,
       saveItem,
