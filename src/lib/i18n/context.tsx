@@ -278,6 +278,12 @@ export function I18nProvider({
         } catch {}
       }
 
+      // If device is offline, stop immediately and display locally cached data without network lag
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setLoadingData(false)
+        return
+      }
+
       // 2. Fetch fresh academic data
       try {
         const data = await fetchFullPlatformData()
