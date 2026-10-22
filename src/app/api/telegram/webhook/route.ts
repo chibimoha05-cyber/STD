@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
           `أهلاً بكم في المنصة الأكاديمية الرسمية.\n` +
           `اضغطوا على الزر أدناه لفتح المنصة ومتابعة المحاضرات والملازم والامتحانات مباشرة 👇`,
         {
-          reply_markup: buildWebAppKeyboard('🚀 فتح المنصة الأكاديمية', '', !isGroup),
+          reply_markup: buildWebAppKeyboard('Open', '', !isGroup),
         }
       )
       return NextResponse.json({ ok: true })
