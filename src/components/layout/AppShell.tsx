@@ -9,7 +9,6 @@ import { ContentEditorModal, type ContentEditorTarget } from '@/components/publi
 import { SlotEditorModal } from '@/components/publisher/SlotEditorModal'
 import { CourseEditorModal } from '@/components/publisher/CourseEditorModal'
 import { ScheduleExceptionModal } from '@/components/publisher/ScheduleExceptionModal'
-import { UrgentBanner } from '@/components/layout/UrgentBanner'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
@@ -95,8 +94,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
           </div>
         )}
-
-        <UrgentBanner />
 
         {publisher && (
           <div className="hidden lg:flex items-center gap-2 bg-accent-soft text-accent-ink text-[13px] px-8 h-9 border-b border-warn-line font-medium">
