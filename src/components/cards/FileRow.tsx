@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
 import { useI18n } from '@/lib/i18n/context'
 
+import { downloadFileItem } from '@/lib/utils/download'
+
 export function FileRow({
   file,
   isPublisher,
@@ -35,12 +37,7 @@ export function FileRow({
     if (onDownload) {
       onDownload(file)
     } else {
-      const a = document.createElement('a')
-      a.href = `/api/attachments/${file.id}/download`
-      a.download = file.name
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+      downloadFileItem(file)
     }
   }
 

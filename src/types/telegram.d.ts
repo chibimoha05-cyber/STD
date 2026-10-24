@@ -29,6 +29,10 @@ declare global {
     }
     setHeaderColor?: (color: string) => void
     setBackgroundColor?: (color: string) => void
+    openLink?: (url: string, options?: { try_instant_view?: boolean }) => void
+    openTelegramLink?: (url: string) => void
+    downloadFile?: (params: { url: string; file_name: string }, callback?: (status: boolean) => void) => void
+    version?: string
     HapticFeedback?: {
       impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void
       notificationOccurred: (type: 'error' | 'success' | 'warning') => void

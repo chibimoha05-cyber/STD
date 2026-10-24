@@ -8,31 +8,13 @@ import { FileIcon } from '@/components/ui/FileIcon'
 import { AccessBadge } from '@/components/ui/Badge'
 import { Empty } from '@/components/ui/Empty'
 import { useI18n } from '@/lib/i18n/context'
-import { isValidUUID } from '@/lib/utils/uuid'
 import { PdfViewer } from '@/components/preview/PdfViewer'
-
-function downloadFileItem(file: FileItem, downloadUrl: string, isReal: boolean) {
-  if (!isReal) {
-    const content = `[ملف أكاديمي تجريبي: ${file.name}]\n[Demo Academic File: ${file.name}]\n\nالحجم / Size: ${file.size}\nنوع الوصول / Access: ${file.access}\nهذا الملف نموذجي مخصص للمعاينة التجريبية في المنصة.`
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = file.name.includes('.') ? file.name : `${file.name}.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-    return
-  }
-
-  const a = document.createElement('a')
-  a.href = downloadUrl
-  a.download = file.name
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-}
+import {
+  resolveFileUrls,
+  downloadFileItem,
+  openFileExternal,
+  getAbsoluteFileUrl,
+} from '@/lib/utils/download'
 
 function FilePreviewBody({
   file,
@@ -56,7 +38,11 @@ function FilePreviewBody({
   const isVideo = ['mp4', 'webm'].includes(ext)
 
   const handleDownload = () => {
-    downloadFileItem(file, downloadUrl, isReal)
+    downloadFileItem(file, downloadUrl)
+  }
+
+  const handleOpenExternal = () => {
+    openFileExternal(previewUrl)
   }
 
   if (loadError) {
@@ -85,32 +71,6 @@ function FilePreviewBody({
     )
   }
 
-  if (!isReal) {
-    return (
-      <div className="bg-sunken rounded-2xl p-6 sm:p-10 text-center space-y-4">
-        <div className="size-16 rounded-2xl bg-surface border border-line grid place-items-center mx-auto shadow-sm">
-          <FileIcon name={file.name} size="lg" />
-        </div>
-        <div className="space-y-1">
-          <h3 className="font-bold text-lg text-ink" dir="ltr">
-            {file.name}
-          </h3>
-          <p className="text-sm text-muted">{t('mockFileNotice')}</p>
-        </div>
-        <div className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-surface border border-line text-xs font-mono text-muted">
-          <span>{file.size}</span>
-          <span>•</span>
-          <span>{file.access}</span>
-        </div>
-        <div className="pt-2">
-          <Button variant="primary" icon="download" onClick={handleDownload}>
-            {t('download')}
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="relative min-h-[50vh] flex flex-col justify-center">
       {loading && !isPdf && (
@@ -126,7 +86,7 @@ function FilePreviewBody({
           fileName={file.name}
           fileSize={file.size}
           access={file.access}
-          onOpenExternal={() => window.open(previewUrl, '_blank')}
+          onOpenExternal={handleOpenExternal}
           onDownload={handleDownload}
         />
       ) : isImage ? (
@@ -176,10 +136,10 @@ function FilePreviewBody({
           />
         </div>
       ) : (
-        <div className="w-full h-[65vh] sm:h-[75vh] rounded-xl overflow-hidden border border-line bg-surface shadow-inner">
+        <div className="w-full h-[65vh] sm:h-[75vh] rounded-xl overflow-hidden border border-line bg-surface shadow-inner relative">
           <iframe
             src={`https://docs.google.com/viewer?url=${encodeURIComponent(
-              previewUrl
+              getAbsoluteFileUrl(previewUrl)
             )}&embedded=true`}
             className="w-full h-full border-0"
             title={file.name}
@@ -210,17 +170,14 @@ export function FilePreviewModal({
 
   const canPublish = isPublisher ?? publisher
   const locked = file.access === 'restricted' && !canPublish
-  const isReal = isValidUUID(file.id)
-
-  const previewUrl = `/api/attachments/${file.id}/download?preview=true`
-  const downloadUrl = `/api/attachments/${file.id}/download`
+  const { previewUrl, downloadUrl, isReal } = resolveFileUrls(file)
 
   const handleDownload = () => {
-    downloadFileItem(file, downloadUrl, isReal)
+    downloadFileItem(file, downloadUrl)
   }
 
   const handleOpenInNewTab = () => {
-    window.open(previewUrl, '_blank')
+    openFileExternal(previewUrl)
   }
 
   return (
@@ -250,16 +207,14 @@ export function FilePreviewModal({
               <Button onClick={onClose}>{t('close')}</Button>
             </div>
             <div className="flex items-center gap-2">
-              {isReal && (
-                <Button
-                  variant="secondary"
-                  icon="external"
-                  onClick={handleOpenInNewTab}
-                  title={t('openInNewTab')}
-                >
-                  <span>{t('openInNewTab')}</span>
-                </Button>
-              )}
+              <Button
+                variant="secondary"
+                icon="external"
+                onClick={handleOpenInNewTab}
+                title={t('openInNewTab')}
+              >
+                <span>{t('openInNewTab')}</span>
+              </Button>
               <Button variant="primary" icon="download" onClick={handleDownload}>
                 {t('download')}
               </Button>

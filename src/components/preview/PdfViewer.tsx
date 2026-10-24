@@ -70,6 +70,15 @@ export function PdfViewer({
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
+  // Desktop safety timeout: prevent infinite spinner if PDF plugin doesn't trigger onLoad
+  useEffect(() => {
+    if (isMobile) return
+    const timer = setTimeout(() => {
+      setIframeLoaded(true)
+    }, 3500)
+    return () => clearTimeout(timer)
+  }, [isMobile, url])
+
   // On mobile: load PDF.js dynamically and render pages onto Canvas
   useEffect(() => {
     if (!isMobile) return
@@ -79,6 +88,14 @@ export function PdfViewer({
     const initPdfJs = async () => {
       setLoading(true)
       setRenderError(false)
+
+      const timeoutId = setTimeout(() => {
+        if (isMounted) {
+          setRenderError(true)
+          setLoading(false)
+        }
+      }, 2500)
+
       try {
         if (!window.pdfjsLib) {
           await new Promise<void>((resolve, reject) => {
@@ -111,7 +128,10 @@ export function PdfViewer({
             'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
         }
 
-        if (!isMounted) return
+        if (!isMounted) {
+          clearTimeout(timeoutId)
+          return
+        }
 
         const loadingTask = window.pdfjsLib!.getDocument({
           url,
@@ -119,6 +139,8 @@ export function PdfViewer({
         })
 
         const pdf = await loadingTask.promise
+        clearTimeout(timeoutId)
+
         if (!isMounted) return
 
         pdfDocRef.current = pdf
@@ -126,6 +148,7 @@ export function PdfViewer({
         setPageNumber(1)
         setLoading(false)
       } catch (err) {
+        clearTimeout(timeoutId)
         console.warn('[PdfViewer] PDF.js rendering fell back:', err)
         if (isMounted) {
           setRenderError(true)
