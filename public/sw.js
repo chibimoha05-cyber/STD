@@ -1,5 +1,5 @@
 // Service Worker for 100% Offline PWA & Telegram WebApp Support
-const CACHE_NAME = 'academic-portal-v3'
+const CACHE_NAME = 'academic-portal-v4'
 
 const PRECACHE_ASSETS = [
   '/',
@@ -11,6 +11,8 @@ const PRECACHE_ASSETS = [
   '/icon-192.png',
   '/icon-512.png',
   '/window.svg',
+  '/vendor/pdfjs/pdf.min.js',
+  '/vendor/pdfjs/pdf.worker.min.js',
   'https://telegram.org/js/telegram-web-app.js',
 ]
 
@@ -67,10 +69,12 @@ self.addEventListener('fetch', (event) => {
   // Skip non-HTTP/HTTPS protocols
   if (!url.protocol.startsWith('http')) return
 
-  // 1. Static Assets (Next.js JS/CSS chunks, fonts, images, icons): Cache-First
+  // 1. Static Assets (Next.js JS/CSS chunks, fonts, images, icons, PDF.js, materials): Cache-First
   const isStaticAsset =
     url.pathname.startsWith('/_next/static/') ||
-    url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|webp|woff2?|ico)$/i) ||
+    url.pathname.startsWith('/vendor/') ||
+    url.pathname.startsWith('/materials/') ||
+    url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|webp|woff2?|ico|pdf|zip)$/i) ||
     url.hostname === 'telegram.org'
 
   if (isStaticAsset) {

@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import fs from 'node:fs'
+import path from 'node:path'
 
-// Generate a valid minimal PDF 1.4 text stream
+// Generate a valid minimal PDF 1.4 text stream (fallback when physical file is not present)
 function generateSamplePdf(fileName: string): string {
   const cleanName = fileName.replace(/[()\\]/g, '')
   const title = `Academic Platform - Computer Science Department`
@@ -54,7 +56,40 @@ export async function GET(request: NextRequest) {
   const name = searchParams.get('name') || 'academic_file.pdf'
   const isPreview = searchParams.get('preview') === 'true' || searchParams.get('inline') === 'true'
 
-  const ext = name.split('.').pop()?.toLowerCase() || 'pdf'
+  const safeBaseName = path.basename(name)
+  const localFilePath = path.join(process.cwd(), 'public', 'materials', safeBaseName)
+  const ext = safeBaseName.split('.').pop()?.toLowerCase() || 'pdf'
+
+  // If a real physical file exists inside the codebase under public/materials, serve it directly!
+  if (fs.existsSync(localFilePath)) {
+    try {
+      const fileBuffer = fs.readFileSync(localFilePath)
+      const mimeMap: Record<string, string> = {
+        pdf: 'application/pdf',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        webp: 'image/webp',
+        zip: 'application/zip',
+        txt: 'text/plain; charset=utf-8',
+      }
+      const contentType = mimeMap[ext] || 'application/octet-stream'
+
+      return new NextResponse(fileBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': contentType,
+          'Content-Length': fileBuffer.byteLength.toString(),
+          'Content-Disposition': isPreview
+            ? `inline; filename="${encodeURIComponent(safeBaseName)}"`
+            : `attachment; filename="${encodeURIComponent(safeBaseName)}"`,
+          'Cache-Control': 'public, max-age=86400',
+        },
+      })
+    } catch (err) {
+      console.warn('[DemoAttachment] Error reading local file:', err)
+    }
+  }
 
   if (ext === 'pdf') {
     const pdfData = generateSamplePdf(name)

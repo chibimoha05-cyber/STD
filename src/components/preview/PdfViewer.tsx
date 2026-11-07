@@ -94,7 +94,7 @@ export function PdfViewer({
           setRenderError(true)
           setLoading(false)
         }
-      }, 2500)
+      }, 12000)
 
       try {
         if (!window.pdfjsLib) {
@@ -108,24 +108,23 @@ export function PdfViewer({
 
             const script = document.createElement('script')
             script.id = 'pdfjs-script'
-            script.src =
-              'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
+            script.src = '/vendor/pdfjs/pdf.min.js'
             script.async = true
             script.onload = () => {
               if (window.pdfjsLib) {
                 window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-                  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+                  '/vendor/pdfjs/pdf.worker.min.js'
                 resolve()
               } else {
                 reject(new Error('PDF.js failed to initialize'))
               }
             }
-            script.onerror = () => reject(new Error('Failed to load PDF.js script'))
+            script.onerror = () => reject(new Error('Failed to load local PDF.js script'))
             document.head.appendChild(script)
           })
         } else if (!window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
           window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+            '/vendor/pdfjs/pdf.worker.min.js'
         }
 
         if (!isMounted) {
@@ -135,7 +134,7 @@ export function PdfViewer({
 
         const loadingTask = window.pdfjsLib!.getDocument({
           url,
-          withCredentials: true,
+          withCredentials: false,
         })
 
         const pdf = await loadingTask.promise
