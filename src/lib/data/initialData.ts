@@ -259,46 +259,213 @@ export const initialSlots: Slot[] = [
 export const initialExceptions: ScheduleException[] = []
 
 export const initialResources: Resource[] = [
+  // --- Course 1: Data Structures (هياكل البيانات) ---
   {
-    id: 'res-off-1',
-    courseId: 'c4',
-    type: 'summary',
-    title: { ar: 'ملخص هيكلية وتصميم قواعد البيانات المتقدمة', en: 'Advanced Database Systems Architecture Summary' },
-    date: -2,
-    files: [
-      { id: 'f-db-1', name: 'Database_Systems_Summary_Ch1-3.pdf', size: '2.4 MB', access: 'public' },
-      { id: 'f-db-2', name: 'ER_Diagram_Cheatsheet.png', size: '850 KB', access: 'public' },
-    ],
-  },
-  {
-    id: 'res-off-2',
+    id: 'res-c1-lectures',
     courseId: 'c1',
     type: 'notes',
-    title: { ar: 'ملازم هياكل البيانات - الأشجار والمخططات (Trees & Graphs)', en: 'Data Structures - Trees & Graphs Lecture Notes' },
+    title: { ar: 'ملازم ومحاضرات هياكل البيانات الرسمية (المحاضرات 1 إلى 9)', en: 'Official Data Structures Lectures (Lectures 01 to 09)' },
+    date: -2,
+    files: [
+      { id: 'f-ds-01', name: 'Data_Structures_Lecture_01_Introduction_and_Memory_Representation.pdf', size: '720 KB', access: 'public' },
+      { id: 'f-ds-02', name: 'Data_Structures_Lecture_02_Linear_Structures_and_Arrays.pdf', size: '550 KB', access: 'public' },
+      { id: 'f-ds-03', name: 'Data_Structures_Lecture_03_Stack_Using_Array.pdf', size: '430 KB', access: 'public' },
+      { id: 'f-ds-04', name: 'Data_Structures_Lecture_04_Stack_Applications_Infix_to_Postfix.pdf', size: '1.2 MB', access: 'public' },
+      { id: 'f-ds-09', name: 'Data_Structures_Lecture_09_Searching_and_Sorting.pdf', size: '250 KB', access: 'public' },
+      { id: 'f-ds-alloc', name: 'Data_Structures_Lecture_Storage_Allocation.pdf', size: '260 KB', access: 'public' },
+    ],
+  },
+  {
+    id: 'res-c1-chapters',
+    courseId: 'c1',
+    type: 'summary',
+    title: { ar: 'فصول ودفتر ملاحظات هياكل البيانات الشامل', en: 'Data Structures Advanced Topics & Notebook' },
     date: -4,
     files: [
-      { id: 'f-ds-1', name: 'Data_Structures_Trees_Ch4.pdf', size: '3.1 MB', access: 'public' },
-      { id: 'f-ds-2', name: 'Binary_Tree_Traversal_Code.zip', size: '1.1 MB', access: 'public' },
+      { id: 'f-ds-ch3', name: 'Data_Structures_Ch03_Queue_and_Circular_Queue.pdf', size: '1.7 MB', access: 'public' },
+      { id: 'f-ds-ch5', name: 'Data_Structures_Ch05_Recursion_and_Recursive_Functions.pdf', size: '1.9 MB', access: 'public' },
+      { id: 'f-ds-ch7', name: 'Data_Structures_Ch07_Trees_and_Binary_Search_Trees.pdf', size: '1.6 MB', access: 'public' },
+      { id: 'f-ds-cpp', name: 'Data_Structures_Linked_Stack_and_Queue_in_CPP.pdf', size: '1.2 MB', access: 'public' },
+      { id: 'f-ds-trace', name: 'Data_Structures_Stack_Operations_Tracing_Examples.pdf', size: '670 KB', access: 'public' },
+      { id: 'f-ds-notebook', name: 'Data_Structures_Comprehensive_Course_Notes_Notebook.pdf', size: '16.0 MB', access: 'public' },
     ],
   },
+
+  // --- Course 2: Databases (قواعد البيانات) ---
   {
-    id: 'res-off-3',
+    id: 'res-c2-main',
     courseId: 'c2',
-    type: 'prep',
-    title: { ar: 'المختبر العملي الأول: البرمجة كائنية التوجه OOP', en: 'OOP Lab 1: Classes & Inheritance Guide' },
+    type: 'source',
+    title: { ar: 'الكتاب المنهجي الرسمي ودليل المختبر: أنظمة قواعد البيانات', en: 'Database Systems Textbook & MS Access Lab Manual' },
+    date: -3,
+    files: [
+      { id: 'f-db-book', name: 'Database_Systems_Complete_Course_Book_Dr_Ali.pdf', size: '4.2 MB', access: 'public' },
+      { id: 'f-db-lab', name: 'Database_Lab_Microsoft_Access_2010_Basics.pdf', size: '2.8 MB', access: 'public' },
+    ],
+  },
+
+  // --- Course 3: OOP & C++ (البرمجة الكيانية) ---
+  {
+    id: 'res-c3-main',
+    courseId: 'c3',
+    type: 'notes',
+    title: { ar: 'ملازم ومراجعات البرمجة المتقدمة والمختبر العملي OOP', en: 'OOP & C++ Advanced Programming Lectures & Reviews' },
+    date: -5,
+    files: [
+      { id: 'f-oop-lab', name: 'Programming_OOP_Lab_and_Fundamentals_Summary.pdf', size: '27.4 MB', access: 'public' },
+      { id: 'f-cpp-fn', name: 'Programming_CPP_Term2_Functions_Summary.pdf', size: '25.0 MB', access: 'public' },
+      { id: 'f-cpp-arr', name: 'Programming_CPP_Term2_Exam_Review_2D_Arrays.pdf', size: '26.9 MB', access: 'public' },
+      { id: 'f-cpp-loops', name: 'Programming_CPP_Loop_Examples_and_Exercises.pdf', size: '6.5 MB', access: 'public' },
+    ],
+  },
+
+  // --- Course 4: Microprocessors (المعالجات المايكروية) ---
+  {
+    id: 'res-c4-main',
+    courseId: 'c4',
+    type: 'source',
+    title: { ar: 'كتاب معمارية المعالج 8086، الترجمة العربية ومخططات التوقيت', en: 'Microprocessor 8086 Textbook, Translation & Timing Diagrams' },
     date: -6,
     files: [
-      { id: 'f-oop-1', name: 'OOP_Lab_Manual_2026.pdf', size: '1.8 MB', access: 'public' },
+      { id: 'f-mp-book', name: 'Microprocessors_8086_Complete_Course_Book.pdf', size: '1.6 MB', access: 'public' },
+      { id: 'f-mp-trans', name: 'Microprocessors_8086_Course_Book_Arabic_Translation.pdf', size: '19.9 MB', access: 'public' },
+      { id: 'f-mp-time', name: 'Microprocessors_8086_Timing_Diagrams.pdf', size: '290 KB', access: 'public' },
+    ],
+  },
+
+  // --- Course 5: Numerical Analysis (التحليل العددي) ---
+  {
+    id: 'res-c5-lectures-1',
+    courseId: 'c5',
+    type: 'notes',
+    title: { ar: 'محاضرات التحليل العددي - الجزء الأول (المحاضرات 01 إلى 08)', en: 'Numerical Analysis Lectures - Part 1 (Lectures 01 to 08)' },
+    date: -7,
+    files: [
+      { id: 'f-num-01', name: 'Numerical_Analysis_Lecture_01_Type_of_Errors.pdf', size: '240 KB', access: 'public' },
+      { id: 'f-num-02', name: 'Numerical_Analysis_Lecture_02_Bisection_Method.pdf', size: '310 KB', access: 'public' },
+      { id: 'f-num-03', name: 'Numerical_Analysis_Lecture_03_False_Position_Method.pdf', size: '230 KB', access: 'public' },
+      { id: 'f-num-04', name: 'Numerical_Analysis_Lecture_04_Newton_Raphson_Method.pdf', size: '160 KB', access: 'public' },
+      { id: 'f-num-05', name: 'Numerical_Analysis_Lecture_05_Secant_Method.pdf', size: '210 KB', access: 'public' },
+      { id: 'f-num-06', name: 'Numerical_Analysis_Lecture_06_System_of_Linear_Equations.pdf', size: '560 KB', access: 'public' },
+      { id: 'f-num-07', name: 'Numerical_Analysis_Lecture_07_Gauss_Elimination_Method.pdf', size: '580 KB', access: 'public' },
+      { id: 'f-num-08', name: 'Numerical_Analysis_Lecture_08_Gauss_Jordan_Method.pdf', size: '900 KB', access: 'public' },
     ],
   },
   {
-    id: 'res-off-4',
+    id: 'res-c5-lectures-2',
+    courseId: 'c5',
+    type: 'notes',
+    title: { ar: 'محاضرات التحليل العددي - الجزء الثاني (المحاضرات 09 إلى 16)', en: 'Numerical Analysis Lectures - Part 2 (Lectures 09 to 16)' },
+    date: -8,
+    files: [
+      { id: 'f-num-09', name: 'Numerical_Analysis_Lecture_09_Gauss_Jacobi_Iteration_Method.pdf', size: '770 KB', access: 'public' },
+      { id: 'f-num-10', name: 'Numerical_Analysis_Lecture_10_Gauss_Seidel_Iteration_Method.pdf', size: '730 KB', access: 'public' },
+      { id: 'f-num-11', name: 'Numerical_Analysis_Lecture_11_Lagrange_Interpolation_Polynomial.pdf', size: '580 KB', access: 'public' },
+      { id: 'f-num-12', name: 'Numerical_Analysis_Lecture_12_Newton_Divided_Differences.pdf', size: '430 KB', access: 'public' },
+      { id: 'f-num-13', name: 'Numerical_Analysis_Lecture_13_Trapezoidal_Rule_Numerical_Integration.pdf', size: '280 KB', access: 'public' },
+      { id: 'f-num-14', name: 'Numerical_Analysis_Lecture_14_Simpsons_Rule_Numerical_Integration.pdf', size: '250 KB', access: 'public' },
+      { id: 'f-num-15', name: 'Numerical_Analysis_Lecture_15_Euler_Method_for_ODEs.pdf', size: '760 KB', access: 'public' },
+      { id: 'f-num-16', name: 'Numerical_Analysis_Lecture_16_Runge_Kutta_Method_for_ODEs.pdf', size: '120 KB', access: 'public' },
+    ],
+  },
+  {
+    id: 'res-c5-matlab',
+    courseId: 'c5',
+    type: 'prep',
+    title: { ar: 'تجارب واختبارات مختبر MATLAB العملي', en: 'MATLAB Practical Lab Manuals & Quizzes' },
+    date: -9,
+    files: [
+      { id: 'f-mat-01', name: 'MATLAB_Lab_01_Numbers_and_Complex_Numbers.pdf', size: '1.6 MB', access: 'public' },
+      { id: 'f-mat-02', name: 'MATLAB_Lab_02_Matrices_and_Basic_Operations.pdf', size: '2.2 MB', access: 'public' },
+      { id: 'f-mat-03', name: 'MATLAB_Lab_03_Vectors_and_Special_Matrices.pdf', size: '360 KB', access: 'public' },
+      { id: 'f-mat-04', name: 'MATLAB_Lab_04_Polynomials_and_Roots.pdf', size: '250 KB', access: 'public' },
+      { id: 'f-mat-q1', name: 'MATLAB_Lab_Exam_Quiz_01.pdf', size: '180 KB', access: 'public' },
+      { id: 'f-mat-q2', name: 'MATLAB_Lab_Exam_Quiz_02.pdf', size: '150 KB', access: 'public' },
+    ],
+  },
+
+  // --- Course 6: Theory of Computation (النظرية الاحتسابية) ---
+  {
+    id: 'res-c6-main',
     courseId: 'c6',
-    type: 'pastExam',
-    title: { ar: 'أسئلة امتحانات سابقة: النظرية الاحتسابية والأوتوماتا', en: 'Computation Theory Past Exams Collection' },
+    type: 'notes',
+    title: { ar: 'دفتر وملازم مادة النظرية الاحتسابية والأوتوماتا الشاملة', en: 'Computation Theory & Automata Complete Notebook' },
     date: -10,
     files: [
-      { id: 'f-th-1', name: 'Theory_Computation_Midterm_2025.pdf', size: '1.4 MB', access: 'public' },
+      { id: 'f-th-notebook', name: 'Computation_Theory_Automata_Complete_Notebook.pdf', size: '17.0 MB', access: 'public' },
+    ],
+  },
+
+  // --- Course 7: Curricula & Textbooks (المناهج والكتب المدرسية) ---
+  {
+    id: 'res-c7-main',
+    courseId: 'c7',
+    type: 'source',
+    title: { ar: 'الكتاب الدراسي المعتمد لمادة المناهج والكتب المدرسية', en: 'Curricula and School Textbooks Course Book' },
+    date: -11,
+    files: [
+      { id: 'f-edu-cur', name: 'Curricula_and_School_Textbooks_Course_Book.pdf', size: '680 KB', access: 'public' },
+    ],
+  },
+
+  // --- Course 8: Educational Leadership (القيادة والإدارة التربوية) ---
+  {
+    id: 'res-c8-main',
+    courseId: 'c8',
+    type: 'source',
+    title: { ar: 'كتاب الإدارة والإشراف التربوي - أ.م.د. وسام عماد', en: 'Educational Administration and Supervision Course Book' },
+    date: -12,
+    files: [
+      { id: 'f-edu-adm', name: 'Educational_Administration_and_Supervision_Dr_Wisam.pdf', size: '16.6 MB', access: 'public' },
+    ],
+  },
+
+  // --- Course 9: English Language (اللغة الإنكليزية) ---
+  {
+    id: 'res-c9-main',
+    courseId: 'c9',
+    type: 'source',
+    title: { ar: 'كتاب الطالب المعتمد لمادة اللغة الإنكليزية - Headway', en: 'New Headway Pre-Intermediate Student’s Book' },
+    date: -13,
+    files: [
+      { id: 'f-eng-headway', name: 'English_New_Headway_Pre_Intermediate_Students_Book.pdf', size: '41.1 MB', access: 'public' },
+    ],
+  },
+
+  // --- Course 10: Arabic Language (اللغة العربية) ---
+  {
+    id: 'res-c10-main',
+    courseId: 'c10',
+    type: 'source',
+    title: { ar: 'كتاب مادة اللغة العربية - المرحلة الثانية', en: 'Arabic Language Course Book - Stage 2' },
+    date: -14,
+    files: [
+      { id: 'f-ar-book', name: 'Arabic_Language_Stage2_Course_Book.pdf', size: '1.3 MB', access: 'public' },
+    ],
+  },
+
+  // --- Course 11: Learning to Think (تعلم التفكير) ---
+  {
+    id: 'res-c11-main',
+    courseId: 'c11',
+    type: 'notes',
+    title: { ar: 'محاضرات مادة مهارات التفكير وملحق الأسئلة والأجوبة', en: 'Thinking Skills Course Lectures & Q&A Supplement' },
+    date: -15,
+    files: [
+      { id: 'f-think-lec', name: 'Thinking_Skills_Course_Lectures_Rana_Thamer.pdf', size: '1.2 MB', access: 'public' },
+      { id: 'f-think-qa', name: 'Thinking_Skills_Course_Supplement_Q_and_A.pdf', size: '490 KB', access: 'public' },
+    ],
+  },
+
+  // --- Course 12: Crimes of the Baath Party (جرائم حزب البعث) ---
+  {
+    id: 'res-c12-main',
+    courseId: 'c12',
+    type: 'source',
+    title: { ar: 'كتاب مادة جرائم نظام البعث في العراق', en: 'Crimes of the Baath Regime in Iraq Course Book' },
+    date: -1,
+    files: [
+      { id: 'f-baath-book', name: 'Baath_Party_Crimes_in_Iraq_Course_Book.pdf', size: '7.7 MB', access: 'public' },
     ],
   },
 ]
