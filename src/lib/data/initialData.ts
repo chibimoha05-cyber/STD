@@ -290,6 +290,18 @@ export const initialResources: Resource[] = [
       { id: 'f-ds-notebook', name: 'Data_Structures_Comprehensive_Course_Notes_Notebook.pdf', size: '16.0 MB', access: 'public' },
     ],
   },
+  {
+    id: 'res-c1-summaries',
+    courseId: 'c1',
+    type: 'summary',
+    title: { ar: 'ملخصات، معجم المصطلحات، وحلول الامتحانات لمادة هياكل البيانات', en: 'Data Structures Summaries, Glossary & Exam Solutions' },
+    date: -3,
+    files: [
+      { id: 'f-ds-sum13', name: 'Data_Structures_Summary_Lectures_1_to_3.pdf', size: '164 KB', access: 'public' },
+      { id: 'f-ds-glossary', name: 'Data_Structures_Terminology_Glossary_Ar_En.pdf', size: '132 KB', access: 'public' },
+      { id: 'f-ds-exam-m1', name: 'Data_Structures_Month1_Exam_Solutions.pdf', size: '5.0 MB', access: 'public' },
+    ],
+  },
 
   // --- Course 2: Databases (قواعد البيانات) ---
   {
@@ -318,8 +330,29 @@ export const initialResources: Resource[] = [
       { id: 'f-cpp-loops', name: 'Programming_CPP_Loop_Examples_and_Exercises.pdf', size: '6.5 MB', access: 'public' },
     ],
   },
+  {
+    id: 'res-c3-guides',
+    courseId: 'c3',
+    type: 'prep',
+    title: { ar: 'دليل بايثون الشامل، المصفوفات، والخوارزميات في C++', en: 'Python Fundamentals Guide, Arrays & C++ Algorithms' },
+    date: -4,
+    files: [
+      { id: 'f-py-guide', name: 'Programming_Python_Fundamentals_Guide.pdf', size: '2.3 MB', access: 'public' },
+      { id: 'f-cpp-arr-sort', name: 'Programming_CPP_Arrays_Sorting_and_Exercises.pdf', size: '3.3 MB', access: 'public' },
+    ],
+  },
 
   // --- Course 4: Microprocessors (المعالجات المايكروية) ---
+  {
+    id: 'res-c4-video',
+    courseId: 'c4',
+    type: 'other',
+    title: { ar: 'فيديو شرح عملي: برمجة لغة الأسمبلي ومعمارية المعالج 8086', en: 'Video Lecture: 8086 Assembly Programming & Architecture' },
+    date: -1,
+    files: [
+      { id: 'f-mp-video', name: 'Microprocessors_8086_Assembly_Video_Explanation.mp4', size: '35.0 MB', access: 'public' },
+    ],
+  },
   {
     id: 'res-c4-main',
     courseId: 'c4',
@@ -330,6 +363,20 @@ export const initialResources: Resource[] = [
       { id: 'f-mp-book', name: 'Microprocessors_8086_Complete_Course_Book.pdf', size: '1.6 MB', access: 'public' },
       { id: 'f-mp-trans', name: 'Microprocessors_8086_Course_Book_Arabic_Translation.pdf', size: '19.9 MB', access: 'public' },
       { id: 'f-mp-time', name: 'Microprocessors_8086_Timing_Diagrams.pdf', size: '290 KB', access: 'public' },
+    ],
+  },
+  {
+    id: 'res-c4-labs',
+    courseId: 'c4',
+    type: 'prep',
+    title: { ar: 'ملازم وشروحات مختبر المعالجات المايكروية والأسمبلي (Labs 01-03)', en: 'Microprocessors & Assembly Lab Guides (Labs 01 to 03)' },
+    date: -5,
+    files: [
+      { id: 'f-mp-lab1', name: 'Microprocessors_Lab_01_Introduction.pdf', size: '2.0 MB', access: 'public' },
+      { id: 'f-mp-lab1-ar', name: 'Microprocessors_Lab_01_Arabic_Guide.pdf', size: '450 KB', access: 'public' },
+      { id: 'f-mp-lab2', name: 'Microprocessors_Lab_02_Move_Operations.pdf', size: '70 KB', access: 'public' },
+      { id: 'f-mp-lab3', name: 'Microprocessors_Lab_03_Variables_and_Memory.pdf', size: '1.4 MB', access: 'public' },
+      { id: 'f-mp-lab3-ar', name: 'Microprocessors_Lab_03_Arabic_Guide.pdf', size: '530 KB', access: 'public' },
     ],
   },
 
@@ -407,6 +454,17 @@ export const initialResources: Resource[] = [
       { id: 'f-edu-cur', name: 'Curricula_and_School_Textbooks_Course_Book.pdf', size: '680 KB', access: 'public' },
     ],
   },
+  {
+    id: 'res-c7-summaries',
+    courseId: 'c7',
+    type: 'summary',
+    title: { ar: 'ملخصات ودليل دراسة مادة المناهج والكتب المدرسية', en: 'Curricula Summaries & Study Guides (Ch 1 & 2)' },
+    date: -2,
+    files: [
+      { id: 'f-edu-cur-guide', name: 'Curricula_Study_Guide_Ch1_and_Ch2.pdf', size: '680 KB', access: 'public' },
+      { id: 'f-edu-cur-sum', name: 'Curricula_Concise_Summary.pdf', size: '2.8 MB', access: 'public' },
+    ],
+  },
 
   // --- Course 8: Educational Leadership (القيادة والإدارة التربوية) ---
   {
@@ -429,6 +487,16 @@ export const initialResources: Resource[] = [
     date: -13,
     files: [
       { id: 'f-eng-headway', name: 'English_New_Headway_Pre_Intermediate_Students_Book.pdf', size: '41.1 MB', access: 'public' },
+    ],
+  },
+  {
+    id: 'res-c9-grammar',
+    courseId: 'c9',
+    type: 'summary',
+    title: { ar: 'ملخص شامل لقواعد امتحان اللغة الإنكليزية', en: 'Comprehensive English Exam Grammar Summary' },
+    date: -3,
+    files: [
+      { id: 'f-eng-grammar', name: 'English_Exam_Grammar_Summary.pdf', size: '6.7 MB', access: 'public' },
     ],
   },
 
@@ -456,6 +524,17 @@ export const initialResources: Resource[] = [
       { id: 'f-think-qa', name: 'Thinking_Skills_Course_Supplement_Q_and_A.pdf', size: '490 KB', access: 'public' },
     ],
   },
+  {
+    id: 'res-c11-summaries',
+    courseId: 'c11',
+    type: 'summary',
+    title: { ar: 'ملزمة مهارات التفكير 2026 وتحديث الإضافات الوزارية', en: 'Thinking Skills 2026 Study Guide & Exam Addendum' },
+    date: -2,
+    files: [
+      { id: 'f-think-guide26', name: 'Thinking_Skills_2026_Study_Guide.pdf', size: '640 KB', access: 'public' },
+      { id: 'f-think-addendum', name: 'Thinking_Skills_Supplement_Addendum.pdf', size: '1.0 MB', access: 'public' },
+    ],
+  },
 
   // --- Course 12: Crimes of the Baath Party (جرائم حزب البعث) ---
   {
@@ -466,6 +545,17 @@ export const initialResources: Resource[] = [
     date: -1,
     files: [
       { id: 'f-baath-book', name: 'Baath_Party_Crimes_in_Iraq_Course_Book.pdf', size: '7.7 MB', access: 'public' },
+    ],
+  },
+  {
+    id: 'res-c12-summaries',
+    courseId: 'c12',
+    type: 'summary',
+    title: { ar: 'الملخص الشامل وملزمة مراجعة وأسئلة جرائم نظام البعث', en: 'Baath Regime Crimes Comprehensive Summary & Exam Notes' },
+    date: -2,
+    files: [
+      { id: 'f-baath-notes', name: 'Baath_Party_Crimes_Study_Notes.pdf', size: '2.9 MB', access: 'public' },
+      { id: 'f-baath-summary', name: 'Baath_Party_Crimes_Comprehensive_Summary.pdf', size: '1.0 MB', access: 'public' },
     ],
   },
 ]

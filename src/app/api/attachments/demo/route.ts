@@ -72,6 +72,9 @@ export async function GET(request: NextRequest) {
         webp: 'image/webp',
         zip: 'application/zip',
         txt: 'text/plain; charset=utf-8',
+        mp4: 'video/mp4',
+        mov: 'video/quicktime',
+        webm: 'video/webm',
       }
       const contentType = mimeMap[ext] || 'application/octet-stream'
 

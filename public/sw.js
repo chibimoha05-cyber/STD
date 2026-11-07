@@ -74,7 +74,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/_next/static/') ||
     url.pathname.startsWith('/vendor/') ||
     url.pathname.startsWith('/materials/') ||
-    url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|webp|woff2?|ico|pdf|zip)$/i) ||
+    url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|webp|woff2?|ico|pdf|zip|mp4|webm|mov)$/i) ||
     url.hostname === 'telegram.org'
 
   if (isStaticAsset) {

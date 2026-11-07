@@ -11,6 +11,9 @@ export const FILE_KINDS: Record<string, { color: string; ar: string; en: string 
   XLSX: { color: '#2f8a57', ar: 'جدول بيانات', en: 'Spreadsheet' },
   ZIP: { color: '#7c6aa8', ar: 'ملف مضغوط', en: 'Archive' },
   SQL: { color: '#2c8a7a', ar: 'ملف شيفرة', en: 'Code file' },
+  MP4: { color: '#8a3ab9', ar: 'فيديو شرح', en: 'Video' },
+  MOV: { color: '#8a3ab9', ar: 'فيديو شرح', en: 'Video' },
+  WEBM: { color: '#8a3ab9', ar: 'فيديو شرح', en: 'Video' },
 }
 
 export const kindOf = (name: string) =>
