@@ -6,6 +6,7 @@ import {
   formatActivityNotification,
   formatReportNotification,
   sendChannelBroadcast,
+  saveTargetChannelId,
 } from './bot'
 import {
   initialCourses,
@@ -139,10 +140,13 @@ export function parseReportCategory(rawCat: string): ReportCategory {
 export async function promptAddCommand(
   chatId: string | number,
   userId: string | number,
-  type: AwaitingType
+  type: AwaitingType,
+  messageId?: number
 ) {
   if (!isTelegramAdmin(userId)) {
-    return sendTelegramMessage(chatId, '⛔ <b>عذراً:</b> هذا الأمر مخصص لناشري ومسؤولي المنصة فقط.')
+    return sendTelegramMessage(chatId, '⛔ <b>عذراً:</b> هذا الأمر مخصص لناشري ومسؤولي المنصة فقط.', {
+      reply_to_message_id: messageId,
+    })
   }
 
   setUserSession(userId, type)
@@ -184,6 +188,7 @@ export async function promptAddCommand(
     `<i>للإلغاء أرسل /cancel في أي وقت.</i>`
 
   return sendTelegramMessage(chatId, promptText, {
+    reply_to_message_id: messageId,
     reply_markup: {
       force_reply: true,
       selective: true,
@@ -258,13 +263,20 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
   const rawText = (msg.text || '').trim()
   if (!chatId || !fromId || !rawText) return false
 
+  const isGroup = msg.chat?.type === 'group' || msg.chat?.type === 'supergroup'
+  if (isGroup) {
+    saveTargetChannelId(chatId)
+  }
+
   const textLower = rawText.toLowerCase()
 
   // 1. Cancel active session
-  if (textLower === '/cancel') {
+  if (textLower === '/cancel' || textLower.startsWith('/cancel@')) {
     if (isTelegramAdmin(fromId)) {
       clearUserSession(fromId)
-      await sendTelegramMessage(chatId, '🚫 تم إلغاء العملية بنجاح.')
+      await sendTelegramMessage(chatId, '🚫 تم إلغاء العملية بنجاح.', {
+        reply_to_message_id: msg.message_id,
+      })
       return true
     }
     return false
@@ -272,17 +284,17 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
 
   // 2. Commands trigger
   if (textLower.startsWith('/exam')) {
-    await promptAddCommand(chatId, fromId, 'exam')
+    await promptAddCommand(chatId, fromId, 'exam', msg.message_id)
     return true
   }
 
   if (textLower.startsWith('/homework') || textLower.startsWith('/assignment')) {
-    await promptAddCommand(chatId, fromId, 'assignment')
+    await promptAddCommand(chatId, fromId, 'assignment', msg.message_id)
     return true
   }
 
   if (textLower.startsWith('/report')) {
-    await promptAddCommand(chatId, fromId, 'report')
+    await promptAddCommand(chatId, fromId, 'report', msg.message_id)
     return true
   }
 
@@ -340,9 +352,11 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
       `✅ <b>تم حفظ ونشر ${typeWord} بنجاح!</b>\n\n` +
       formatActivityNotification(activity, course)
 
-    await sendTelegramMessage(chatId, confirmationText)
+    await sendTelegramMessage(chatId, confirmationText, {
+      reply_to_message_id: msg.message_id,
+    })
 
-    // Broadcast to Telegram Channel
+    // Broadcast to Telegram Channel (if different from this chat)
     await sendChannelBroadcast(
       formatActivityNotification(activity, course),
       '/activities',
@@ -379,9 +393,11 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
       `✅ <b>تم حفظ ونشر التقرير بنجاح!</b>\n\n` +
       formatReportNotification(report, course)
 
-    await sendTelegramMessage(chatId, confirmationText)
+    await sendTelegramMessage(chatId, confirmationText, {
+      reply_to_message_id: msg.message_id,
+    })
 
-    // Broadcast to Telegram Channel
+    // Broadcast to Telegram Channel (if different from this chat)
     await sendChannelBroadcast(
       formatReportNotification(report, course),
       '/reports',

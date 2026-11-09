@@ -46,6 +46,7 @@ export interface SendMessageOptions {
   parse_mode?: 'HTML' | 'MarkdownV2'
   reply_markup?: unknown
   disable_web_page_preview?: boolean
+  reply_to_message_id?: number
 }
 
 export async function sendTelegramMessage(
@@ -67,6 +68,7 @@ export async function sendTelegramMessage(
         parse_mode: options.parse_mode || 'HTML',
         disable_web_page_preview: options.disable_web_page_preview ?? true,
         reply_markup: options.reply_markup,
+        reply_to_message_id: options.reply_to_message_id,
       }),
     })
 
