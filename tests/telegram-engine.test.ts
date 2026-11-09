@@ -14,6 +14,7 @@ import {
   parseKeyValues,
   parseDueOffsetAndDate,
   parseReportCategory,
+  parseSubmissionData,
   getUserSession,
   setUserSession,
   clearUserSession,
@@ -275,6 +276,50 @@ describe('Telegram Bot Engine & Multi-Admin Security Verification', () => {
     assert.strictEqual(parseReportCategory('lecture notes'), 'course')
   })
 
+  it('parses line-by-line input without field names/keys', () => {
+    // 1. Report with 4 lines: Course, Title, Category, Author
+    const reportText = `نظم قواعد البيانات\nتقرير المقارنة بين SQL و NoSQL\nlab\nأحمد علي وحيدر محمد`
+    const parsedReport = parseSubmissionData(reportText, 'report')
+    assert.strictEqual(parsedReport.course.id, 'c2')
+    assert.strictEqual(parsedReport.title, 'تقرير المقارنة بين SQL و NoSQL')
+    assert.strictEqual(parsedReport.category, 'lab')
+    assert.strictEqual(parsedReport.author, 'أحمد علي وحيدر محمد')
+
+    // 2. Report with 3 lines (author without category)
+    const report3Lines = `معمارية الحاسوب\nتقرير مسجلات المعالج 8086\nمحمد اركان`
+    const parsed3 = parseSubmissionData(report3Lines, 'report')
+    assert.strictEqual(parsed3.course.id, 'c4')
+    assert.strictEqual(parsed3.title, 'تقرير مسجلات المعالج 8086')
+    assert.strictEqual(parsed3.author, 'محمد اركان')
+
+    // 3. Exam with 5 lines
+    const examText = `معمارية الحاسوب\nامتحان الشهر الأول\nبعد 5 أيام\n10:30 - المختبر 2\nيشمل مادة المعالج 8086 وتتبع السجلات`
+    const parsedExam = parseSubmissionData(examText, 'exam')
+    assert.strictEqual(parsedExam.course.id, 'c4')
+    assert.strictEqual(parsedExam.title, 'امتحان الشهر الأول')
+    assert.strictEqual(parsedExam.dueDays, 5)
+    assert.strictEqual(parsedExam.time, '10:30')
+    assert.strictEqual(parsedExam.place, 'المختبر 2')
+    assert.strictEqual(parsedExam.desc, 'يشمل مادة المعالج 8086 وتتبع السجلات')
+
+    // 4. Assignment with English lines
+    const hwText = `Data Structures\nBinary Search Algorithm Homework\nin 3 days\n23:59 Online\nImplement in C++ with test cases`
+    const parsedHw = parseSubmissionData(hwText, 'assignment')
+    assert.strictEqual(parsedHw.course.id, 'c1')
+    assert.strictEqual(parsedHw.title, 'Binary Search Algorithm Homework')
+    assert.strictEqual(parsedHw.dueDays, 3)
+    assert.strictEqual(parsedHw.time, '23:59')
+    assert.strictEqual(parsedHw.place, 'Online')
+    assert.strictEqual(parsedHw.desc, 'Implement in C++ with test cases')
+
+    // 5. Semicolon format tolerance (e.g. topic; bla bla)
+    const semiText = `course; Databases\ntitle; SQL Query Optimization\ntype; practical`
+    const parsedSemi = parseSubmissionData(semiText, 'report')
+    assert.strictEqual(parsedSemi.course.id, 'c2')
+    assert.strictEqual(parsedSemi.title, 'SQL Query Optimization')
+    assert.strictEqual(parsedSemi.category, 'lab')
+  })
+
   it('handleAdminCommands lifecycle and security verification', async () => {
     const adminId = 1669700577 // Owner Admin
     const randomId = 999999999 // Unauthorized
@@ -354,6 +399,19 @@ describe('Telegram Bot Engine & Multi-Admin Security Verification', () => {
       },
     })
     assert.strictEqual(submitEnRes, true)
+
+    // 4d. Explicit reply using pure line-by-line format (no keys) creates report successfully
+    const submitPureLinesRes = await handleAdminCommands({
+      message_id: 108,
+      from: { id: adminId },
+      chat: { id: 12345, type: 'private' },
+      text: `قواعد البيانات\nتقرير استعلامات الفهارس\nlab\nمحمد اركان`,
+      reply_to_message: {
+        message_id: 997,
+        text: '📊 إضافة تقرير دراسي | Add Report',
+      },
+    })
+    assert.strictEqual(submitPureLinesRes, true)
   })
 })
 

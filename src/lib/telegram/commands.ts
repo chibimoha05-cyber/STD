@@ -13,6 +13,7 @@ import {
   initialCourses,
   initialActivities,
   initialReports,
+  type Course,
   type Activity,
   type Report,
   type ActivityKind,
@@ -65,10 +66,10 @@ export function clearUserSession(userId: string | number): PendingSession | null
   return session
 }
 
-// Match course name or ID in Arabic or English
-export function findCourseByQuery(query: string) {
-  const clean = query.trim().toLowerCase()
-  if (!clean) return initialCourses[0]
+// Strict match for courses returning null if not specifically identified
+export function matchCourseStrict(query: string): Course | null {
+  const clean = (query || '').trim().toLowerCase()
+  if (!clean) return null
 
   // Direct ID / Code / Name / Desc match
   const found = initialCourses.find(
@@ -76,9 +77,7 @@ export function findCourseByQuery(query: string) {
       c.id.toLowerCase() === clean ||
       c.code.toLowerCase().includes(clean) ||
       c.name.ar.toLowerCase().includes(clean) ||
-      c.name.en.toLowerCase().includes(clean) ||
-      c.desc.ar.toLowerCase().includes(clean) ||
-      c.desc.en.toLowerCase().includes(clean)
+      c.name.en.toLowerCase().includes(clean)
   )
   if (found) return found
 
@@ -92,7 +91,7 @@ export function findCourseByQuery(query: string) {
     clean.includes('arch') ||
     clean.includes('8086')
   ) {
-    return initialCourses.find((c) => c.id === 'c4') || initialCourses[0]
+    return initialCourses.find((c) => c.id === 'c4') || null
   }
   if (
     clean.includes('هياكل') ||
@@ -100,7 +99,7 @@ export function findCourseByQuery(query: string) {
     clean.includes('data struct') ||
     clean.includes('algo')
   ) {
-    return initialCourses.find((c) => c.id === 'c1') || initialCourses[0]
+    return initialCourses.find((c) => c.id === 'c1') || null
   }
   if (
     clean.includes('قواعد') ||
@@ -108,7 +107,7 @@ export function findCourseByQuery(query: string) {
     clean.includes('sql') ||
     clean.includes('db')
   ) {
-    return initialCourses.find((c) => c.id === 'c2') || initialCourses[0]
+    return initialCourses.find((c) => c.id === 'c2') || null
   }
   if (
     clean.includes('كيان') ||
@@ -117,7 +116,7 @@ export function findCourseByQuery(query: string) {
     clean.includes('c++') ||
     clean.includes('object')
   ) {
-    return initialCourses.find((c) => c.id === 'c3') || initialCourses[0]
+    return initialCourses.find((c) => c.id === 'c3') || null
   }
   if (
     clean.includes('تفاضل') ||
@@ -128,7 +127,7 @@ export function findCourseByQuery(query: string) {
     clean.includes('calculus') ||
     clean.includes('calc')
   ) {
-    return initialCourses.find((c) => c.id === 'c5') || initialCourses[0]
+    return initialCourses.find((c) => c.id === 'c5') || null
   }
   if (
     clean.includes('حوسب') ||
@@ -138,7 +137,7 @@ export function findCourseByQuery(query: string) {
     clean.includes('computation') ||
     clean.includes('toc')
   ) {
-    return initialCourses.find((c) => c.id === 'c6') || initialCourses[0]
+    return initialCourses.find((c) => c.id === 'c6') || null
   }
   if (
     clean.includes('منهج') ||
@@ -147,7 +146,7 @@ export function findCourseByQuery(query: string) {
     clean.includes('curricul') ||
     clean.includes('textbook')
   ) {
-    return initialCourses.find((c) => c.id === 'c7') || initialCourses[0]
+    return initialCourses.find((c) => c.id === 'c7') || null
   }
   if (
     clean.includes('قياد') ||
@@ -156,7 +155,7 @@ export function findCourseByQuery(query: string) {
     clean.includes('leadership') ||
     clean.includes('admin')
   ) {
-    return initialCourses.find((c) => c.id === 'c8') || initialCourses[0]
+    return initialCourses.find((c) => c.id === 'c8') || null
   }
   if (
     clean.includes('إنكليز') ||
@@ -164,30 +163,35 @@ export function findCourseByQuery(query: string) {
     clean.includes('انجليز') ||
     clean.includes('english')
   ) {
-    return initialCourses.find((c) => c.id === 'c9') || initialCourses[0]
+    return initialCourses.find((c) => c.id === 'c9') || null
   }
   if (
     clean.includes('عرب') ||
     clean.includes('لغة عربية') ||
     clean.includes('arabic')
   ) {
-    return initialCourses.find((c) => c.id === 'c10') || initialCourses[0]
+    return initialCourses.find((c) => c.id === 'c10') || null
   }
   if (
     clean.includes('تفكير') ||
     clean.includes('think')
   ) {
-    return initialCourses.find((c) => c.id === 'c11') || initialCourses[0]
+    return initialCourses.find((c) => c.id === 'c11') || null
   }
   if (
     clean.includes('بعث') ||
     clean.includes('جرائم') ||
     clean.includes('baath')
   ) {
-    return initialCourses.find((c) => c.id === 'c12') || initialCourses[0]
+    return initialCourses.find((c) => c.id === 'c12') || null
   }
 
-  return initialCourses[0]
+  return null
+}
+
+// Match course name or ID in Arabic or English, falling back to default
+export function findCourseByQuery(query: string): Course {
+  return matchCourseStrict(query) || initialCourses[0]
 }
 
 // Parses user text input lines (key: value), supporting Arabic, English & bilingual keys
@@ -196,7 +200,12 @@ export function parseKeyValues(text: string): Record<string, string> {
   const lines = text.split('\n')
 
   for (const line of lines) {
-    const colonIdx = line.indexOf(':') !== -1 ? line.indexOf(':') : line.indexOf('：')
+    const colonIdx =
+      line.indexOf(':') !== -1
+        ? line.indexOf(':')
+        : line.indexOf('：') !== -1
+          ? line.indexOf('：')
+          : line.indexOf(';')
     if (colonIdx !== -1) {
       const rawKey = line.slice(0, colonIdx).trim().toLowerCase()
       const val = line.slice(colonIdx + 1).trim()
@@ -297,6 +306,235 @@ export function parseReportCategory(rawCat: string): ReportCategory {
   return 'course'
 }
 
+export function isCategoryKeyword(val: string): boolean {
+  const clean = (val || '').trim().toLowerCase()
+  return (
+    clean === 'lab' ||
+    clean === 'project' ||
+    clean === 'course' ||
+    clean === 'practical' ||
+    clean === 'مختبر' ||
+    clean === 'عملي' ||
+    clean === 'مشروع' ||
+    clean === 'مادة' ||
+    clean.includes('تقرير مختبر') ||
+    clean.includes('مشروع تخرج')
+  )
+}
+
+export interface ParsedSubmission {
+  course: Course
+  title: string
+  dueDays: number
+  dueDateString: string
+  time: string
+  place: string
+  desc: string
+  category: ReportCategory
+  author: string
+}
+
+export function parseSubmissionData(rawText: string, type: AwaitingType): ParsedSubmission {
+  const kv = parseKeyValues(rawText)
+
+  // Split lines, cleaning leading numbers (1. / 1-) or "Line X:" / "السطر X:" labels
+  const rawLines = rawText
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+
+  const lines = rawLines.map((l) =>
+    l.replace(/^(?:السطر\s*\d+\s*[:\-\.]\s*|\d+[\.\-\)]\s*|line\s*\d+\s*[:\-\.]\s*)/i, '').trim()
+  )
+
+  // 1. Determine Course & Title
+  let course: Course | null = null
+  let titleStr = ''
+
+  const explicitCourseKey =
+    kv['المادة'] ||
+    kv['مادة'] ||
+    kv['course'] ||
+    kv['subject'] ||
+    kv['class'] ||
+    kv['module']
+
+  if (explicitCourseKey) {
+    course = findCourseByQuery(explicitCourseKey)
+  }
+
+  const explicitTitleKey =
+    kv['العنوان'] ||
+    kv['عنوان'] ||
+    kv['title'] ||
+    kv['topic'] ||
+    kv['name']
+
+  if (explicitTitleKey) {
+    titleStr = explicitTitleKey
+  }
+
+  // If not explicitly provided via keys, extract positionally from lines
+  if (!course || !titleStr) {
+    const l0 = lines[0] || ''
+    const l1 = lines[1] || ''
+
+    const courseMatch0 = matchCourseStrict(l0)
+    const courseMatch1 = matchCourseStrict(l1)
+
+    if (courseMatch0) {
+      if (!course) course = courseMatch0
+      if (!titleStr) titleStr = l1 || l0
+    } else if (courseMatch1) {
+      if (!course) course = courseMatch1
+      if (!titleStr) titleStr = l0
+    } else {
+      if (!course) course = findCourseByQuery(l0)
+      if (!titleStr) titleStr = l1 || l0 || 'بدون عنوان'
+    }
+  }
+
+  // 2. Exam and Assignment Fields
+  let dueDays = 3
+  let dueDateString = ''
+  let timeStr = type === 'assignment' ? '23:59' : '10:00'
+  let placeStr = type === 'assignment' ? 'تسليم إلكتروني' : 'القسم'
+  let descStr = ''
+
+  if (type === 'exam' || type === 'assignment') {
+    // Due Date
+    const rawDue =
+      kv['الموعد'] ||
+      kv['موعد'] ||
+      kv['due'] ||
+      kv['date'] ||
+      kv['deadline'] ||
+      kv['when'] ||
+      lines[2] ||
+      'بعد 3 أيام'
+
+    const dueResult = parseDueOffsetAndDate(rawDue)
+    dueDays = dueResult.dueDays
+    dueDateString = dueResult.dueDateString
+
+    // Time
+    const explicitTime = kv['الوقت'] || kv['وقت'] || kv['time']
+    if (explicitTime) {
+      timeStr = explicitTime
+    } else {
+      // Look for a time pattern (e.g. 10:30) across line 3, line 2, or line 4
+      const combinedTimeText = `${lines[3] || ''} ${lines[2] || ''} ${lines[4] || ''}`
+      const timeMatch = combinedTimeText.match(/\b(\d{1,2}:\d{2})\b/)
+      if (timeMatch) {
+        timeStr = timeMatch[1]
+      }
+    }
+
+    // Place / Room
+    const explicitPlace =
+      kv['القاعة'] ||
+      kv['قاعة'] ||
+      kv['المكان'] ||
+      kv['مكان'] ||
+      kv['hall'] ||
+      kv['room'] ||
+      kv['lab'] ||
+      kv['place'] ||
+      kv['location']
+
+    if (explicitPlace) {
+      placeStr = explicitPlace
+    } else if (lines[3]) {
+      // Clean time and dashes out of line 3 to get the room/location
+      const cleanPlace = lines[3]
+        .replace(/\b\d{1,2}:\d{2}\b/, '')
+        .replace(/\s*(?:am|pm|[صم])\b/gi, '')
+        .replace(/[\/\-–—]/g, '')
+        .trim()
+      if (cleanPlace) {
+        placeStr = cleanPlace
+      }
+    }
+
+    // Details
+    const explicitDesc =
+      kv['التفاصيل'] ||
+      kv['تفاصيل'] ||
+      kv['desc'] ||
+      kv['description'] ||
+      kv['details'] ||
+      kv['notes'] ||
+      kv['note']
+
+    if (explicitDesc) {
+      descStr = explicitDesc
+    } else if (lines.length > 4) {
+      descStr = lines.slice(4).join('\n')
+    }
+  }
+
+  // 3. Report Fields
+  let category: ReportCategory = 'course'
+  let authorStr = 'ناشر معتمد'
+
+  if (type === 'report') {
+    const explicitCategory =
+      kv['النوع'] ||
+      kv['نوع'] ||
+      kv['category'] ||
+      kv['type'] ||
+      kv['kind']
+
+    const explicitAuthor =
+      kv['الكاتب'] ||
+      kv['كاتب'] ||
+      kv['author'] ||
+      kv['by'] ||
+      kv['student'] ||
+      kv['writer']
+
+    if (explicitCategory) {
+      category = parseReportCategory(explicitCategory)
+    }
+    if (explicitAuthor) {
+      authorStr = explicitAuthor
+    }
+
+    // Positional check for category & author if not provided by keys
+    const l2 = lines[2] || ''
+    const l3 = lines[3] || ''
+
+    if (!explicitCategory) {
+      if (isCategoryKeyword(l2)) {
+        category = parseReportCategory(l2)
+        if (!explicitAuthor && l3) authorStr = l3
+      } else if (isCategoryKeyword(l3)) {
+        category = parseReportCategory(l3)
+        if (!explicitAuthor && l2) authorStr = l2
+      } else {
+        if (!explicitAuthor && l2) authorStr = l2
+        // Infer category from title
+        category = parseReportCategory(titleStr)
+      }
+    } else if (!explicitAuthor) {
+      if (l2 && !isCategoryKeyword(l2)) authorStr = l2
+      else if (l3 && !isCategoryKeyword(l3)) authorStr = l3
+    }
+  }
+
+  return {
+    course: course || initialCourses[0],
+    title: titleStr,
+    dueDays,
+    dueDateString,
+    time: timeStr,
+    place: placeStr,
+    desc: descStr,
+    category,
+    author: authorStr,
+  }
+}
+
 export interface TelegramIncomingMessage {
   message_id: number
   from?: { id: number; first_name?: string; username?: string; is_bot?: boolean }
@@ -366,40 +604,60 @@ export async function promptAddCommand(
   }
 
   let title = ''
+  let guide = ''
   let example = ''
 
   if (type === 'exam') {
     title = '📝 <b>إضافة امتحان جديد | Add New Exam</b>'
+    guide =
+      `<b>اكتب البيانات في ردك سطراً بسطر (دون الحاجة لكتابة أسماء حقول):</b>\n` +
+      `• السطر 1: المادة (Course)\n` +
+      `• السطر 2: عنوان الامتحان (Title)\n` +
+      `• السطر 3: الموعد (Due: بعد 5 أيام أو in 5 days أو 2026-11-20)\n` +
+      `• السطر 4: الوقت والقاعة (Time & Hall: 10:30 مختبر 2)\n` +
+      `• السطر 5: التفاصيل والملاحظات (Details - اختياري)`
     example =
-      `المادة / Course: معمارية الحاسوب (or Microprocessors)\n` +
-      `العنوان / Title: امتحان الشهر الأول\n` +
-      `الموعد / Due: بعد 5 أيام (or in 5 days or 2026-11-20)\n` +
-      `الوقت / Time: 10:30\n` +
-      `القاعة / Hall: المختبر 2\n` +
-      `التفاصيل / Details: يشمل مادة المعالج 8086 وتتبع السجلات`
+      `معمارية الحاسوب\n` +
+      `امتحان الشهر الأول\n` +
+      `بعد 5 أيام\n` +
+      `10:30 - المختبر 2\n` +
+      `يشمل مادة المعالج 8086 وتتبع السجلات`
   } else if (type === 'assignment') {
     title = '📌 <b>إضافة واجب | Add Assignment</b>'
+    guide =
+      `<b>اكتب البيانات في ردك سطراً بسطر (دون الحاجة لكتابة أسماء حقول):</b>\n` +
+      `• السطر 1: المادة (Course)\n` +
+      `• السطر 2: عنوان الواجب (Title)\n` +
+      `• السطر 3: الموعد (Due: بعد 3 أيام أو in 3 days)\n` +
+      `• السطر 4: وقت أو طريقة التسليم (Time & Place: 23:59 تسليم إلكتروني)\n` +
+      `• السطر 5: التفاصيل والملاحظات (Details - اختياري)`
     example =
-      `المادة / Course: هياكل البيانات (or Data Structures)\n` +
-      `العنوان / Title: واجب خوارزمية البحث الثنائي\n` +
-      `الموعد / Due: بعد 3 أيام (or in 3 days)\n` +
-      `الوقت / Time: 23:59\n` +
-      `القاعة / Place: تسليم إلكتروني (or Online)\n` +
-      `التفاصيل / Details: كتابة الكود بلغة C++ مع تقرير بسيط`
+      `هياكل البيانات\n` +
+      `واجب خوارزمية البحث الثنائي\n` +
+      `بعد 3 أيام\n` +
+      `23:59 - تسليم إلكتروني\n` +
+      `كتابة الكود بلغة C++ مع تقرير بسيط`
   } else {
     title = '📊 <b>إضافة تقرير دراسي | Add Report</b>'
+    guide =
+      `<b>اكتب البيانات في ردك سطراً بسطر (دون الحاجة لكتابة أسماء حقول):</b>\n` +
+      `• السطر 1: المادة (Course)\n` +
+      `• السطر 2: عنوان التقرير (Title)\n` +
+      `• السطر 3: نوع التقرير (lab أو project أو course)\n` +
+      `• السطر 4: الكاتب / الطلاب (Author - اختياري)`
     example =
-      `المادة / Course: نظم قواعد البيانات (or Databases)\n` +
-      `العنوان / Title: تقرير المقارنة بين SQL و NoSQL\n` +
-      `النوع / Type: lab (or course / project)\n` +
-      `الكاتب / Author: أحمد علي وحيدر محمد`
+      `نظم قواعد البيانات\n` +
+      `تقرير المقارنة بين SQL و NoSQL\n` +
+      `lab\n` +
+      `أحمد علي وحيدر محمد`
   }
 
   const promptText =
     `${title}\n\n` +
-    `⚠️ <b>تنبيه / Note:</b> قم بالرد (Reply) المباشر على هذه الرسالة لإرسال البيانات بالعربية أو الإنجليزية:\n\n` +
+    `${guide}\n\n` +
+    `📋 <b>قالب جاهز للنسخ والتعديل:</b>\n` +
     `<code>${example}</code>\n\n` +
-    `<i>سيتم حذف هذه الرسالة تلقائياً فور إكمال الإضافة أو عند إرسال /cancel.</i>`
+    `<i>⚠️ قم بالرد (Reply) المباشر على هذه الرسالة لإرسال البيانات.\nسيتم تنظيف الرسائل تلقائياً بعد النشر أو عند طلب /cancel.</i>`
 
   const sent = await sendTelegramMessage(chatId, promptText, {
     reply_to_message_id: messageId,
@@ -600,66 +858,21 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
 
   clearUserSession(fromId)
 
-  // 5. Process incoming submission
-  const kv = parseKeyValues(rawText)
-  const courseQuery =
-    kv['المادة'] ||
-    kv['مادة'] ||
-    kv['course'] ||
-    kv['subject'] ||
-    kv['class'] ||
-    kv['module'] ||
-    ''
-  const course = findCourseByQuery(courseQuery)
-  const titleStr =
-    kv['العنوان'] ||
-    kv['عنوان'] ||
-    kv['title'] ||
-    kv['topic'] ||
-    kv['name'] ||
-    rawText.split('\n')[0]
+  // 5. Process incoming submission (supporting both line-by-line format and key-value pairs)
+  const sub = parseSubmissionData(rawText, awaitingType)
+  const course = sub.course
+  const titleStr = sub.title
 
   if (awaitingType === 'exam' || awaitingType === 'assignment') {
-    const placeStr =
-      kv['القاعة'] ||
-      kv['قاعة'] ||
-      kv['المكان'] ||
-      kv['مكان'] ||
-      kv['hall'] ||
-      kv['room'] ||
-      kv['lab'] ||
-      kv['place'] ||
-      kv['location'] ||
-      (awaitingType === 'exam' ? 'القسم' : 'تسليم إلكتروني')
-    const timeStr = kv['الوقت'] || kv['وقت'] || kv['time'] || '10:00'
-    const descStr =
-      kv['التفاصيل'] ||
-      kv['تفاصيل'] ||
-      kv['desc'] ||
-      kv['description'] ||
-      kv['details'] ||
-      kv['notes'] ||
-      kv['note'] ||
-      ''
-    const rawDue =
-      kv['الموعد'] ||
-      kv['موعد'] ||
-      kv['due'] ||
-      kv['date'] ||
-      kv['deadline'] ||
-      kv['when'] ||
-      'بعد 3 أيام'
-    const { dueDays, dueDateString } = parseDueOffsetAndDate(rawDue)
-
     const activity: Activity = {
       id: `act-${Date.now()}`,
       courseId: course.id,
       kind: awaitingType as ActivityKind,
       title: { ar: titleStr, en: titleStr },
-      due: dueDays,
-      time: timeStr,
-      place: { ar: placeStr, en: placeStr },
-      desc: { ar: descStr, en: descStr },
+      due: sub.dueDays,
+      time: sub.time,
+      place: { ar: sub.place, en: sub.place },
+      desc: { ar: sub.desc, en: sub.desc },
       files: [],
     }
 
@@ -667,7 +880,7 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
     initialActivities.unshift(activity)
 
     // Save in Supabase if connected
-    await persistActivityToSupabase(activity, dueDateString)
+    await persistActivityToSupabase(activity, sub.dueDateString)
 
     const typeWord = awaitingType === 'exam' ? 'الامتحان | Exam' : 'الواجب | Assignment'
     const confirmationText =
@@ -687,29 +900,12 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
   }
 
   if (awaitingType === 'report') {
-    const authorStr =
-      kv['الكاتب'] ||
-      kv['كاتب'] ||
-      kv['author'] ||
-      kv['by'] ||
-      kv['student'] ||
-      kv['writer'] ||
-      'ناشر معتمد'
-    const rawCategory =
-      kv['النوع'] ||
-      kv['نوع'] ||
-      kv['category'] ||
-      kv['type'] ||
-      kv['kind'] ||
-      'course'
-    const category = parseReportCategory(rawCategory)
-
     const report: Report = {
       id: `rep-${Date.now()}`,
-      category,
+      category: sub.category,
       courseId: course.id,
       title: { ar: titleStr, en: titleStr },
-      author: { ar: authorStr, en: authorStr },
+      author: { ar: sub.author, en: sub.author },
       date: 0,
       files: [],
     }
