@@ -3,6 +3,7 @@
 import { isTelegramAdmin, TELEGRAM_BOT_TOKEN } from './config'
 import {
   sendTelegramMessage,
+  deleteTelegramMessage,
   formatActivityNotification,
   formatReportNotification,
   sendChannelBroadcast,
@@ -22,6 +23,9 @@ export type AwaitingType = 'exam' | 'assignment' | 'report'
 
 interface PendingSession {
   type: AwaitingType
+  promptMessageId?: number
+  triggerMessageId?: number
+  chatId?: string | number
   timestamp: number
 }
 
@@ -39,12 +43,26 @@ export function getUserSession(userId: string | number): PendingSession | null {
   return session
 }
 
-export function setUserSession(userId: string | number, type: AwaitingType): void {
-  userSessions.set(String(userId), { type, timestamp: Date.now() })
+export function setUserSession(
+  userId: string | number,
+  type: AwaitingType,
+  promptMessageId?: number,
+  triggerMessageId?: number,
+  chatId?: string | number
+): void {
+  userSessions.set(String(userId), {
+    type,
+    promptMessageId,
+    triggerMessageId,
+    chatId,
+    timestamp: Date.now(),
+  })
 }
 
-export function clearUserSession(userId: string | number): void {
+export function clearUserSession(userId: string | number): PendingSession | null {
+  const session = userSessions.get(String(userId)) || null
   userSessions.delete(String(userId))
+  return session
 }
 
 // Match course name or ID (e.g., "c4", "معمارية", "معالجات", "قواعد بيانات")
@@ -204,8 +222,6 @@ export async function promptAddCommand(
     })
   }
 
-  setUserSession(userId, type)
-
   let title = ''
   let example = ''
 
@@ -238,17 +254,25 @@ export async function promptAddCommand(
 
   const promptText =
     `${title}\n\n` +
-    `أرسل تفاصيل البيانات رداً على هذه الرسالة بالشكل التالي (سطر لكل بيان):\n\n` +
+    `⚠️ <b>تنبيه:</b> يجب الرد (Reply) المباشر على هذه الرسالة لإرسال البيانات بالشكل التالي:\n\n` +
     `<code>${example}</code>\n\n` +
-    `<i>للإلغاء أرسل /cancel في أي وقت.</i>`
+    `<i>سيتم حذف هذه الرسالة تلقائياً فور إكمال الإضافة أو عند إرسال /cancel.</i>`
 
-  return sendTelegramMessage(chatId, promptText, {
+  const sent = await sendTelegramMessage(chatId, promptText, {
     reply_to_message_id: messageId,
     reply_markup: {
       force_reply: true,
       selective: true,
     },
   })
+
+  const promptMsgId =
+    sent.ok && sent.result && typeof sent.result === 'object' && 'message_id' in sent.result
+      ? (sent.result as { message_id: number }).message_id
+      : undefined
+
+  setUserSession(userId, type, promptMsgId, messageId, chatId)
+  return sent
 }
 
 async function persistActivityToSupabase(activity: Activity, dueDateString: string) {
@@ -342,10 +366,28 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
   // 2. Cancel active session
   if (textLower === '/cancel' || textLower.startsWith('/cancel@')) {
     if (isAuthorized) {
-      clearUserSession(fromId)
-      await sendTelegramMessage(chatId, '🚫 تم إلغاء العملية بنجاح.', {
-        reply_to_message_id: msg.message_id,
-      })
+      const active = clearUserSession(fromId)
+      if (active?.promptMessageId) {
+        await deleteTelegramMessage(chatId, active.promptMessageId).catch(() => {})
+      }
+      if (active?.triggerMessageId) {
+        await deleteTelegramMessage(chatId, active.triggerMessageId).catch(() => {})
+      }
+      await deleteTelegramMessage(chatId, msg.message_id).catch(() => {})
+
+      const cancelRes = await sendTelegramMessage(chatId, '🚫 تم إلغاء العملية وحذف مسودة الإدخال.')
+      if (
+        cancelRes.ok &&
+        cancelRes.result &&
+        typeof cancelRes.result === 'object' &&
+        'message_id' in cancelRes.result
+      ) {
+        const cMsgId = (cancelRes.result as { message_id: number }).message_id
+        // Auto-delete cancel message after 5 seconds
+        setTimeout(() => {
+          deleteTelegramMessage(chatId, cMsgId).catch(() => {})
+        }, 5000)
+      }
       return true
     }
     return false
@@ -367,23 +409,41 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
     return true
   }
 
-  // 3. Check for active session OR direct reply to prompt
+  // 4. Input submission: ONLY process if the user is explicitly replying to the bot's prompt message!
+  const replyTo = msg.reply_to_message
+  if (!replyTo) {
+    // Normal chat message — do NOT consume as form data!
+    return false
+  }
+
   let awaitingType: AwaitingType | null = null
   const session = getUserSession(fromId)
-  if (session) {
+
+  if (session && session.promptMessageId && replyTo.message_id === session.promptMessageId) {
     awaitingType = session.type
-  } else if (msg.reply_to_message?.text && isAuthorized) {
-    const promptText = msg.reply_to_message.text
-    if (promptText.includes('إضافة امتحان')) awaitingType = 'exam'
-    else if (promptText.includes('إضافة واجب')) awaitingType = 'assignment'
-    else if (promptText.includes('إضافة تقرير')) awaitingType = 'report'
+  } else if (replyTo.text) {
+    if (replyTo.text.includes('إضافة امتحان')) awaitingType = 'exam'
+    else if (replyTo.text.includes('إضافة واجب')) awaitingType = 'assignment'
+    else if (replyTo.text.includes('إضافة تقرير')) awaitingType = 'report'
   }
 
   if (!awaitingType || !isAuthorized || rawText.startsWith('/')) {
     return false
   }
 
-  // 4. Process incoming submission
+  // Auto-delete the prompt message, the initial command trigger, and the user draft input
+  const promptIdToDelete = session?.promptMessageId || replyTo.message_id
+  if (promptIdToDelete) {
+    await deleteTelegramMessage(chatId, promptIdToDelete).catch(() => {})
+  }
+  if (session?.triggerMessageId) {
+    await deleteTelegramMessage(chatId, session.triggerMessageId).catch(() => {})
+  }
+  await deleteTelegramMessage(chatId, msg.message_id).catch(() => {})
+
+  clearUserSession(fromId)
+
+  // 5. Process incoming submission
   const kv = parseKeyValues(rawText)
   const courseQuery = kv['المادة'] || kv['مادة'] || kv['course'] || ''
   const course = findCourseByQuery(courseQuery)
@@ -414,16 +474,12 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
     // Save in Supabase if connected
     await persistActivityToSupabase(activity, dueDateString)
 
-    clearUserSession(fromId)
-
     const typeWord = awaitingType === 'exam' ? 'الامتحان' : 'الواجب'
     const confirmationText =
-      `✅ <b>تم حفظ ونشر ${typeWord} بنجاح!</b>\n\n` +
+      `✅ <b>تم نشر ${typeWord} بنجاح!</b>\n\n` +
       formatActivityNotification(activity, course)
 
-    await sendTelegramMessage(chatId, confirmationText, {
-      reply_to_message_id: msg.message_id,
-    })
+    await sendTelegramMessage(chatId, confirmationText)
 
     // Broadcast to Telegram Channel (if different from this chat)
     await sendChannelBroadcast(
@@ -456,15 +512,11 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
     // Save in Supabase if connected
     await persistReportToSupabase(report)
 
-    clearUserSession(fromId)
-
     const confirmationText =
-      `✅ <b>تم حفظ ونشر التقرير بنجاح!</b>\n\n` +
+      `✅ <b>تم نشر التقرير بنجاح!</b>\n\n` +
       formatReportNotification(report, course)
 
-    await sendTelegramMessage(chatId, confirmationText, {
-      reply_to_message_id: msg.message_id,
-    })
+    await sendTelegramMessage(chatId, confirmationText)
 
     // Broadcast to Telegram Channel (if different from this chat)
     await sendChannelBroadcast(

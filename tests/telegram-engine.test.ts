@@ -267,11 +267,26 @@ describe('Telegram Bot Engine & Multi-Admin Security Verification', () => {
     })
     assert.strictEqual(getUserSession(adminId)?.type, 'report')
 
-    const submitRes = await handleAdminCommands({
+    // 4a. Regular group chat without reply_to_message is ignored (not consumed as form data)
+    const chatMsg = await handleAdminCommands({
       message_id: 105,
       from: { id: adminId },
       chat: { id: 12345, type: 'private' },
+      text: 'شباب باجر ماكو دوام؟',
+    })
+    assert.strictEqual(chatMsg, false)
+    assert.strictEqual(getUserSession(adminId)?.type, 'report') // Session still waiting
+
+    // 4b. Explicit reply to prompt is parsed and auto-deleted
+    const submitRes = await handleAdminCommands({
+      message_id: 106,
+      from: { id: adminId },
+      chat: { id: 12345, type: 'private' },
       text: `المادة: هياكل البيانات\nالعنوان: تقرير الأشجار الثنائية\nالنوع: lab\nالكاتب: محمد اركان`,
+      reply_to_message: {
+        message_id: 999,
+        text: '📊 إضافة تقرير دراسي',
+      },
     })
     assert.strictEqual(submitRes, true)
     assert.strictEqual(getUserSession(adminId), null) // Session cleared after submission
