@@ -560,77 +560,8 @@ export const initialResources: Resource[] = [
   },
 ]
 
-export const initialActivities: Activity[] = [
-  {
-    id: 'act-off-1',
-    courseId: 'c2',
-    kind: 'exam',
-    title: { ar: 'امتحان نصف الفصل: أنظمة قواعد البيانات', en: 'Midterm Exam: Database Systems' },
-    due: 3,
-    time: '12:30',
-    place: { ar: 'القاعة 2', en: 'Hall 2' },
-    desc: {
-      ar: 'المادة تشمل الفصول الثلاثة الأولى: العلاقات، الجبر العلائقي، ولغة SQL.',
-      en: 'Covers first 3 chapters: Relational Model, Relational Algebra, and SQL.',
-    },
-    files: [
-      { id: 'f-db-syl', name: 'Exam_Syllabus_Topics.pdf', size: '420 KB', access: 'public' },
-    ],
-  },
-  {
-    id: 'act-off-2',
-    courseId: 'c1',
-    kind: 'assignment',
-    title: { ar: 'واجب برمجي: خوارزمية البحث في الأشجار الثنائية', en: 'Assignment: Binary Search Tree Implementation' },
-    due: 5,
-    time: '23:59',
-    place: { ar: 'تسليم إلكتروني', en: 'Online Submission' },
-    desc: {
-      ar: 'كتابة برنامج بلغة C++ لبناء شجرة بحث ثنائية وتنفيذ عمليات الإضافة والحذف والتجوال.',
-      en: 'Implement a BST in C++ with insert, delete, and in-order traversal.',
-    },
-    files: [
-      { id: 'f-ds-req', name: 'Assignment_Requirements.pdf', size: '610 KB', access: 'public' },
-    ],
-  },
-  {
-    id: 'act-off-3',
-    courseId: 'c4',
-    kind: 'exam',
-    title: { ar: 'امتحان عملي: معمارية الحاسوب ولغة التجميع', en: 'Practical Exam: Computer Architecture' },
-    due: 7,
-    time: '12:30',
-    place: { ar: 'المختبر G1', en: 'Lab G1' },
-    desc: {
-      ar: 'تطبيق عملي لكتابة دوال بلغة Assembly 8086 وتنفيذها على المعالج.',
-      en: 'Assembly 8086 practical programming and CPU register tracing.',
-    },
-    files: [],
-  },
-]
+export const initialActivities: Activity[] = []
 
-export const initialReports: Report[] = [
-  {
-    id: 'rep-off-1',
-    category: 'course',
-    courseId: 'c2',
-    title: { ar: 'تقرير: مقارنة بين قواعد البيانات العلائقية وNoSQL', en: 'Report: Relational vs NoSQL Databases Comparison' },
-    author: { ar: 'أحمد علي وحيدر محمد', en: 'Ahmed Ali & Haider Mohammed' },
-    date: -3,
-    files: [
-      { id: 'f-rep-1', name: 'Relational_vs_NoSQL_Report.pdf', size: '1.9 MB', access: 'public' },
-    ],
-  },
-  {
-    id: 'rep-off-2',
-    category: 'lab',
-    courseId: 'c3',
-    title: { ar: 'تقرير المختبر الثالث: Polymorphism في C++', en: 'Lab Report 3: Polymorphism in C++' },
-    author: { ar: 'سارة خالد ومريم حسن', en: 'Sarah Khalid & Maryam Hassan' },
-    date: -5,
-    files: [
-      { id: 'f-rep-2', name: 'OOP_Lab3_Polymorphism_Report.pdf', size: '920 KB', access: 'public' },
-    ],
-  },
-]
+export const initialReports: Report[] = []
+
 
