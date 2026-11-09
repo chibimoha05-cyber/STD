@@ -1,6 +1,6 @@
 // Telegram Admin Interactive Commands (/exam, /homework, /report)
 
-import { isTelegramAdmin } from './config'
+import { isTelegramAdmin, TELEGRAM_BOT_TOKEN } from './config'
 import {
   sendTelegramMessage,
   formatActivityNotification,
@@ -136,6 +136,35 @@ export function parseReportCategory(rawCat: string): ReportCategory {
   return 'course'
 }
 
+/**
+ * Checks if the caller is an authorized administrator:
+ * 1. Configured Admin / Owner (Mohamed / Harith / env admins)
+ * 2. Group Admin / Creator in Telegram groups
+ */
+export async function isUserAuthorizedAdmin(
+  chatId: string | number,
+  userId: string | number
+): Promise<boolean> {
+  if (isTelegramAdmin(userId)) return true
+
+  const strChatId = String(chatId)
+  if (strChatId.startsWith('-') && TELEGRAM_BOT_TOKEN) {
+    try {
+      const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChatMember?chat_id=${chatId}&user_id=${userId}`
+      const res = await fetch(url)
+      const data = await res.json()
+      if (data.ok && data.result) {
+        const status = data.result.status
+        if (status === 'creator' || status === 'administrator') {
+          return true
+        }
+      }
+    } catch {}
+  }
+
+  return false
+}
+
 // Prompts for each command
 export async function promptAddCommand(
   chatId: string | number,
@@ -143,8 +172,9 @@ export async function promptAddCommand(
   type: AwaitingType,
   messageId?: number
 ) {
-  if (!isTelegramAdmin(userId)) {
-    return sendTelegramMessage(chatId, '⛔ <b>عذراً:</b> هذا الأمر مخصص لناشري ومسؤولي المنصة فقط.', {
+  const authorized = await isUserAuthorizedAdmin(chatId, userId)
+  if (!authorized) {
+    return sendTelegramMessage(chatId, '⛔ <b>عذراً:</b> هذا الأمر مخصص لمشرفي ومسؤولي المنصة فقط.', {
       reply_to_message_id: messageId,
     })
   }
@@ -268,11 +298,12 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
     saveTargetChannelId(chatId)
   }
 
+  const isAuthorized = await isUserAuthorizedAdmin(chatId, fromId)
   const textLower = rawText.toLowerCase()
 
   // 1. Cancel active session
   if (textLower === '/cancel' || textLower.startsWith('/cancel@')) {
-    if (isTelegramAdmin(fromId)) {
+    if (isAuthorized) {
       clearUserSession(fromId)
       await sendTelegramMessage(chatId, '🚫 تم إلغاء العملية بنجاح.', {
         reply_to_message_id: msg.message_id,
@@ -303,14 +334,14 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
   const session = getUserSession(fromId)
   if (session) {
     awaitingType = session.type
-  } else if (msg.reply_to_message?.text && isTelegramAdmin(fromId)) {
+  } else if (msg.reply_to_message?.text && isAuthorized) {
     const promptText = msg.reply_to_message.text
     if (promptText.includes('إضافة امتحان')) awaitingType = 'exam'
     else if (promptText.includes('إضافة واجب')) awaitingType = 'assignment'
     else if (promptText.includes('إضافة تقرير')) awaitingType = 'report'
   }
 
-  if (!awaitingType || !isTelegramAdmin(fromId) || rawText.startsWith('/')) {
+  if (!awaitingType || !isAuthorized || rawText.startsWith('/')) {
     return false
   }
 
