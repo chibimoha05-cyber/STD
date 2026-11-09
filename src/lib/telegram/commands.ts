@@ -194,9 +194,10 @@ export async function promptAddCommand(
   chatId: string | number,
   userId: string | number,
   type: AwaitingType,
-  messageId?: number
+  messageId?: number,
+  senderChatId?: string | number
 ) {
-  const authorized = await isUserAuthorizedAdmin(chatId, userId)
+  const authorized = await isUserAuthorizedAdmin(chatId, userId, senderChatId)
   if (!authorized) {
     return sendTelegramMessage(chatId, '⛔ <b>عذراً:</b> هذا الأمر مخصص لمشرفي ومسؤولي المنصة فقط.', {
       reply_to_message_id: messageId,
