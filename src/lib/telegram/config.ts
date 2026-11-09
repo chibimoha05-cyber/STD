@@ -23,5 +23,5 @@ export function isTelegramAdmin(userId: number | string): boolean {
 export const PLATFORM_BASE_URL =
   process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes('localhost')
     ? process.env.NEXT_PUBLIC_SITE_URL
-    : 'https://std-platform.vercel.app'
+    : 'https://std-platform-nine.vercel.app'
 
