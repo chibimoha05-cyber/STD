@@ -1,5 +1,5 @@
 // Service Worker for 100% Offline PWA & Telegram WebApp Support
-const CACHE_NAME = 'academic-portal-v4'
+const CACHE_NAME = 'academic-portal-v5'
 
 const PRECACHE_ASSETS = [
   '/',
@@ -7,6 +7,7 @@ const PRECACHE_ASSETS = [
   '/courses',
   '/activities',
   '/reports',
+  '/search',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',

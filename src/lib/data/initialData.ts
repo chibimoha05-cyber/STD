@@ -563,7 +563,7 @@ export const initialResources: Resource[] = [
 export const initialActivities: Activity[] = [
   {
     id: 'act-off-1',
-    courseId: 'c4',
+    courseId: 'c2',
     kind: 'exam',
     title: { ar: 'امتحان نصف الفصل: أنظمة قواعد البيانات', en: 'Midterm Exam: Database Systems' },
     due: 3,
@@ -595,7 +595,7 @@ export const initialActivities: Activity[] = [
   },
   {
     id: 'act-off-3',
-    courseId: 'c3',
+    courseId: 'c4',
     kind: 'exam',
     title: { ar: 'امتحان عملي: معمارية الحاسوب ولغة التجميع', en: 'Practical Exam: Computer Architecture' },
     due: 7,
@@ -613,7 +613,7 @@ export const initialReports: Report[] = [
   {
     id: 'rep-off-1',
     category: 'course',
-    courseId: 'c4',
+    courseId: 'c2',
     title: { ar: 'تقرير: مقارنة بين قواعد البيانات العلائقية وNoSQL', en: 'Report: Relational vs NoSQL Databases Comparison' },
     author: { ar: 'أحمد علي وحيدر محمد', en: 'Ahmed Ali & Haider Mohammed' },
     date: -3,
@@ -624,7 +624,7 @@ export const initialReports: Report[] = [
   {
     id: 'rep-off-2',
     category: 'lab',
-    courseId: 'c2',
+    courseId: 'c3',
     title: { ar: 'تقرير المختبر الثالث: Polymorphism في C++', en: 'Lab Report 3: Polymorphism in C++' },
     author: { ar: 'سارة خالد ومريم حسن', en: 'Sarah Khalid & Maryam Hassan' },
     date: -5,
