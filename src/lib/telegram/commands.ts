@@ -136,16 +136,40 @@ export function parseReportCategory(rawCat: string): ReportCategory {
   return 'course'
 }
 
+export interface TelegramIncomingMessage {
+  message_id: number
+  from?: { id: number; first_name?: string; username?: string; is_bot?: boolean }
+  sender_chat?: { id: number; title?: string; type?: string }
+  chat?: { id: number; type: string; title?: string }
+  text?: string
+  reply_to_message?: {
+    text?: string
+    message_id?: number
+  }
+}
+
 /**
  * Checks if the caller is an authorized administrator:
  * 1. Configured Admin / Owner (Mohamed / Harith / env admins)
- * 2. Group Admin / Creator in Telegram groups
+ * 2. Anonymous Admin posting as the group/channel itself
+ * 3. Group Admin / Creator in Telegram groups
  */
 export async function isUserAuthorizedAdmin(
   chatId: string | number,
-  userId: string | number
+  userId: string | number,
+  senderChatId?: string | number
 ): Promise<boolean> {
   if (isTelegramAdmin(userId)) return true
+
+  // Anonymous admin sending as the group chat itself
+  if (senderChatId && String(senderChatId) === String(chatId)) {
+    return true
+  }
+
+  // Telegram Group Anonymous Bot ID
+  if (String(userId) === '1087968824') {
+    return true
+  }
 
   const strChatId = String(chatId)
   if (strChatId.startsWith('-') && TELEGRAM_BOT_TOKEN) {
@@ -272,17 +296,6 @@ async function persistReportToSupabase(report: Report) {
   }
 }
 
-export interface TelegramIncomingMessage {
-  message_id: number
-  from?: { id: number; first_name?: string; username?: string }
-  chat?: { id: number; type: string }
-  text?: string
-  reply_to_message?: {
-    text?: string
-    message_id?: number
-  }
-}
-
 /**
  * Main dispatcher for Telegram Admin commands & interactive sessions.
  * Returns true if the message was handled by an admin workflow.
@@ -298,10 +311,34 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
     saveTargetChannelId(chatId)
   }
 
-  const isAuthorized = await isUserAuthorizedAdmin(chatId, fromId)
+  const isAuthorized = await isUserAuthorizedAdmin(chatId, fromId, msg.sender_chat?.id)
   const textLower = rawText.toLowerCase()
 
-  // 1. Cancel active session
+  // 1. Diagnostics / Health check command (/test or /ping)
+  if (
+    textLower === '/test' ||
+    textLower.startsWith('/test@') ||
+    textLower === '/ping' ||
+    textLower.startsWith('/ping@')
+  ) {
+    const roleText = isAuthorized
+      ? '👑 رتبتك: <b>مشرف معتمد (Admin)</b> ✅'
+      : '👤 رتبتك: <b>طالب / عضو</b>'
+    const statusText =
+      `🟢 <b>البوت متصل ويعمل بنجاح!</b>\n\n` +
+      `${roleText}\n` +
+      `🆔 المعرف: <code>${fromId}</code>\n\n` +
+      (isAuthorized
+        ? `الأوامر المتاحة لك:\n• /exam - إضافة امتحان\n• /homework - إضافة واجب\n• /report - إضافة تقرير\n• /cancel - إلغاء العملية الجارية`
+        : `الأوامر المتاحة لك:\n• /start - فتح المنصة الأكاديمية\n• /open - رابط المنصة المباشر`)
+
+    await sendTelegramMessage(chatId, statusText, {
+      reply_to_message_id: msg.message_id,
+    })
+    return true
+  }
+
+  // 2. Cancel active session
   if (textLower === '/cancel' || textLower.startsWith('/cancel@')) {
     if (isAuthorized) {
       clearUserSession(fromId)
@@ -313,19 +350,19 @@ export async function handleAdminCommands(msg: TelegramIncomingMessage): Promise
     return false
   }
 
-  // 2. Commands trigger
+  // 3. Commands trigger
   if (textLower.startsWith('/exam')) {
-    await promptAddCommand(chatId, fromId, 'exam', msg.message_id)
+    await promptAddCommand(chatId, fromId, 'exam', msg.message_id, msg.sender_chat?.id)
     return true
   }
 
   if (textLower.startsWith('/homework') || textLower.startsWith('/assignment')) {
-    await promptAddCommand(chatId, fromId, 'assignment', msg.message_id)
+    await promptAddCommand(chatId, fromId, 'assignment', msg.message_id, msg.sender_chat?.id)
     return true
   }
 
   if (textLower.startsWith('/report')) {
-    await promptAddCommand(chatId, fromId, 'report', msg.message_id)
+    await promptAddCommand(chatId, fromId, 'report', msg.message_id, msg.sender_chat?.id)
     return true
   }
 
