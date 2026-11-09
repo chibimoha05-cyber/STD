@@ -5,6 +5,7 @@ import {
   buildWebAppKeyboard,
   saveTargetChannelId,
 } from '@/lib/telegram/bot'
+import { handleAdminCommands } from '@/lib/telegram/commands'
 
 export async function POST(req: NextRequest) {
   try {
@@ -67,6 +68,12 @@ export async function POST(req: NextRequest) {
           }
           return NextResponse.json({ ok: true })
         }
+      }
+
+      // Check admin interactive commands (/exam, /homework, /report, and responses)
+      const handledByAdmin = await handleAdminCommands(msg)
+      if (handledByAdmin) {
+        return NextResponse.json({ ok: true })
       }
 
       // In groups: respond if message starts with /start, /open, or mentions the bot

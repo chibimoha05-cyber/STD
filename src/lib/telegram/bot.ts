@@ -1,7 +1,7 @@
 // Telegram Bot API client and academic message formatters
 
 import { TELEGRAM_BOT_TOKEN, PLATFORM_BASE_URL } from './config'
-import type { Activity, Resource, ScheduleException, Course, Slot } from '@/lib/data/initialData'
+import type { Activity, Resource, ScheduleException, Course, Slot, Report } from '@/lib/data/initialData'
 import fs from 'fs'
 import path from 'path'
 
@@ -168,6 +168,22 @@ export function formatActivityNotification(activity: Activity, course?: Course):
   if (activity.desc.ar) {
     msg += `\n💬 <b>تفاصيل:</b>\n${activity.desc.ar}\n`
   }
+
+  return msg
+}
+
+export function formatReportNotification(report: Report, course?: Course): string {
+  let catArabic = 'تقرير دراسي'
+  if (report.category === 'lab') catArabic = 'تقرير مختبر عملي'
+  if (report.category === 'project') catArabic = 'مشروع دراسي'
+
+  let msg = `<b>📊 إضافة تقرير أكاديمي جديد</b>\n\n`
+  if (course) {
+    msg += `📚 <b>المادة:</b> ${course.name.ar} (${course.code})\n`
+  }
+  msg += `🏷️ <b>العنوان:</b> ${report.title.ar}\n`
+  msg += `📂 <b>النوع:</b> ${catArabic}\n`
+  msg += `✍️ <b>إعداد:</b> ${report.author.ar}\n`
 
   return msg
 }

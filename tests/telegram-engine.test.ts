@@ -6,9 +6,20 @@ import {
   formatResourceNotification,
   formatScheduleExceptionNotification,
   formatMorningBriefing,
+  formatReportNotification,
   buildWebAppKeyboard,
 } from '../src/lib/telegram/bot'
-import type { Course, Activity, Resource, ScheduleException, Slot } from '../src/lib/data/initialData'
+import {
+  findCourseByQuery,
+  parseKeyValues,
+  parseDueOffsetAndDate,
+  parseReportCategory,
+  getUserSession,
+  setUserSession,
+  clearUserSession,
+  handleAdminCommands,
+} from '../src/lib/telegram/commands'
+import type { Course, Activity, Resource, ScheduleException, Slot, Report } from '../src/lib/data/initialData'
 
 describe('Telegram Bot Engine & Multi-Admin Security Verification', () => {
   it('correctly authorizes designated Admins (User & Harith)', () => {
@@ -153,5 +164,118 @@ describe('Telegram Bot Engine & Multi-Admin Security Verification', () => {
     assert.ok(activeBriefing.includes('08:30 - 10:30'))
     assert.ok(activeBriefing.includes('Hall 2'))
   })
+
+  it('formatReportNotification formats academic report card', () => {
+    const course: Course = {
+      id: 'c2',
+      code: 'CS 202',
+      name: { ar: 'قواعد البيانات', en: 'Databases' },
+      instructor: { ar: 'أ.د. علي محمد', en: 'Prof. Ali' },
+      color: '#2f6b5a',
+      credits: 3,
+      desc: { ar: 'وصف', en: 'desc' },
+    }
+    const report: Report = {
+      id: 'r-test',
+      category: 'lab',
+      courseId: 'c2',
+      title: { ar: 'تقرير استعلامات SQL المتقدمة', en: 'Advanced SQL Report' },
+      author: { ar: 'أحمد علي وحيدر محمد', en: 'Ahmed & Haider' },
+      date: 0,
+      files: [],
+    }
+
+    const text = formatReportNotification(report, course)
+    assert.ok(text.includes('إضافة تقرير أكاديمي جديد'))
+    assert.ok(text.includes('قواعد البيانات'))
+    assert.ok(text.includes('تقرير مختبر عملي'))
+    assert.ok(text.includes('استعلامات SQL المتقدمة'))
+    assert.ok(text.includes('أحمد علي وحيدر محمد'))
+  })
+
+  it('findCourseByQuery matches course by code, arabic name, or english name', () => {
+    const cByCode = findCourseByQuery('CS 201')
+    assert.strictEqual(cByCode.id, 'c1')
+
+    const cByAr = findCourseByQuery('معمارية')
+    assert.strictEqual(cByAr.id, 'c4')
+
+    const cByEn = findCourseByQuery('automata')
+    assert.strictEqual(cByEn.id, 'c6')
+  })
+
+  it('parseKeyValues and parseDueOffsetAndDate handle flexible input formats', () => {
+    const sample = `المادة: هياكل البيانات\nالعنوان: امتحان فصلي\nالموعد: 2026-12-01\nالوقت: 11:00\nالقاعة: قاعة 4\nالتفاصيل: الفصول الأولى`
+    const kv = parseKeyValues(sample)
+    assert.strictEqual(kv['المادة'], 'هياكل البيانات')
+    assert.strictEqual(kv['العنوان'], 'امتحان فصلي')
+    assert.strictEqual(kv['الوقت'], '11:00')
+    assert.strictEqual(kv['القاعة'], 'قاعة 4')
+    assert.strictEqual(kv['التفاصيل'], 'الفصول الأولى')
+
+    const dueIso = parseDueOffsetAndDate('2026-12-01')
+    assert.strictEqual(dueIso.dueDateString, '2026-12-01')
+
+    const dueRel = parseDueOffsetAndDate('بعد 4 أيام')
+    assert.strictEqual(dueRel.dueDays, 4)
+
+    assert.strictEqual(parseReportCategory('تقرير مختبر عملي'), 'lab')
+    assert.strictEqual(parseReportCategory('مشروع تخرج'), 'project')
+    assert.strictEqual(parseReportCategory('مادة دراسية'), 'course')
+  })
+
+  it('handleAdminCommands lifecycle and security verification', async () => {
+    const adminId = 1669700577 // Owner Admin
+    const randomId = 999999999 // Unauthorized
+
+    // 1. Non-admin trying /exam is rejected
+    const nonAdminRes = await handleAdminCommands({
+      message_id: 101,
+      from: { id: randomId },
+      chat: { id: 12345, type: 'private' },
+      text: '/exam',
+    })
+    // Even if promptAddCommand runs, it returns permission error and session is not created
+    assert.strictEqual(getUserSession(randomId), null)
+
+    // 2. Admin initiating /exam sets session
+    const adminExamTrigger = await handleAdminCommands({
+      message_id: 102,
+      from: { id: adminId },
+      chat: { id: 12345, type: 'private' },
+      text: '/exam',
+    })
+    assert.strictEqual(adminExamTrigger, true)
+    assert.strictEqual(getUserSession(adminId)?.type, 'exam')
+
+    // 3. Admin cancel command clears session
+    const adminCancel = await handleAdminCommands({
+      message_id: 103,
+      from: { id: adminId },
+      chat: { id: 12345, type: 'private' },
+      text: '/cancel',
+    })
+    assert.strictEqual(adminCancel, true)
+    assert.strictEqual(getUserSession(adminId), null)
+
+    // 4. Admin initiating /report and submitting details
+    await handleAdminCommands({
+      message_id: 104,
+      from: { id: adminId },
+      chat: { id: 12345, type: 'private' },
+      text: '/report',
+    })
+    assert.strictEqual(getUserSession(adminId)?.type, 'report')
+
+    const submitRes = await handleAdminCommands({
+      message_id: 105,
+      from: { id: adminId },
+      chat: { id: 12345, type: 'private' },
+      text: `المادة: هياكل البيانات\nالعنوان: تقرير الأشجار الثنائية\nالنوع: lab\nالكاتب: محمد اركان`,
+    })
+    assert.strictEqual(submitRes, true)
+    assert.strictEqual(getUserSession(adminId), null) // Session cleared after submission
+  })
 })
+
 
