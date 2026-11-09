@@ -178,37 +178,43 @@ export async function sendChannelBroadcast(
 export function formatActivityNotification(activity: Activity, course?: Course): string {
   const isExam = activity.kind === 'exam'
   const icon = isExam ? '📝' : '📌'
-  const header = isExam ? 'إشعار امتحان جديد' : 'واجب / تكليف دراسي جديد'
+  const header = isExam ? 'إشعار امتحان جديد | New Exam' : 'واجب / تكليف دراسي | New Assignment'
 
   let msg = `<b>${icon} ${header}</b>\n\n`
   if (course) {
-    msg += `📚 <b>المادة:</b> ${course.name.ar} (${course.code})\n`
-    msg += `👨‍🏫 <b>المحاضر:</b> ${course.instructor.ar}\n`
+    msg += `📚 <b>المادة / Course:</b> ${course.name.ar} (${course.name.en})\n`
+    msg += `👨‍🏫 <b>المحاضر / Instructor:</b> ${course.instructor.ar}\n`
   }
-  msg += `🏷️ <b>العنوان:</b> ${activity.title.ar}\n`
-  msg += `🗓️ <b>الموعد:</b> بعد ${activity.due} أيام${activity.time ? ` (الساعة ${activity.time})` : ''}\n`
+  msg += `🏷️ <b>العنوان / Title:</b> ${activity.title.ar}\n`
+
+  let daysText = `بعد ${activity.due} أيام`
+  if (activity.due === 0) daysText = 'اليوم (Today)'
+  else if (activity.due === 1) daysText = 'غداً (Tomorrow)'
+  else daysText = `بعد ${activity.due} أيام (in ${activity.due} days)`
+
+  msg += `🗓️ <b>الموعد / Due:</b> ${daysText}${activity.time ? ` (${activity.time})` : ''}\n`
   if (activity.place.ar) {
-    msg += `📍 <b>المكان:</b> ${activity.place.ar}\n`
+    msg += `📍 <b>المكان / Location:</b> ${activity.place.ar}\n`
   }
   if (activity.desc.ar) {
-    msg += `\n💬 <b>تفاصيل:</b>\n${activity.desc.ar}\n`
+    msg += `\n💬 <b>تفاصيل / Details:</b>\n${activity.desc.ar}\n`
   }
 
   return msg
 }
 
 export function formatReportNotification(report: Report, course?: Course): string {
-  let catArabic = 'تقرير دراسي'
-  if (report.category === 'lab') catArabic = 'تقرير مختبر عملي'
-  if (report.category === 'project') catArabic = 'مشروع دراسي'
+  let catText = 'تقرير دراسي | Course Report'
+  if (report.category === 'lab') catText = 'تقرير مختبر عملي | Lab Report'
+  if (report.category === 'project') catText = 'مشروع دراسي | Academic Project'
 
-  let msg = `<b>📊 إضافة تقرير أكاديمي جديد</b>\n\n`
+  let msg = `<b>📊 إضافة تقرير أكاديمي جديد | New Report Added</b>\n\n`
   if (course) {
-    msg += `📚 <b>المادة:</b> ${course.name.ar} (${course.code})\n`
+    msg += `📚 <b>المادة / Course:</b> ${course.name.ar} (${course.name.en})\n`
   }
-  msg += `🏷️ <b>العنوان:</b> ${report.title.ar}\n`
-  msg += `📂 <b>النوع:</b> ${catArabic}\n`
-  msg += `✍️ <b>إعداد:</b> ${report.author.ar}\n`
+  msg += `🏷️ <b>العنوان / Title:</b> ${report.title.ar}\n`
+  msg += `📂 <b>النوع / Category:</b> ${catText}\n`
+  msg += `✍️ <b>إعداد / Author:</b> ${report.author.ar}\n`
 
   return msg
 }

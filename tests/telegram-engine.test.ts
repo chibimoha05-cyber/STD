@@ -224,6 +224,57 @@ describe('Telegram Bot Engine & Multi-Admin Security Verification', () => {
     assert.strictEqual(parseReportCategory('مادة دراسية'), 'course')
   })
 
+  it('supports English and bilingual inputs for courses, keys, relative dates, and reports', () => {
+    // English Course Aliases
+    assert.strictEqual(findCourseByQuery('micro').id, 'c4')
+    assert.strictEqual(findCourseByQuery('arch').id, 'c4')
+    assert.strictEqual(findCourseByQuery('8086').id, 'c4')
+    assert.strictEqual(findCourseByQuery('algo').id, 'c1')
+    assert.strictEqual(findCourseByQuery('db').id, 'c2')
+    assert.strictEqual(findCourseByQuery('c++').id, 'c3')
+    assert.strictEqual(findCourseByQuery('calc').id, 'c5')
+    assert.strictEqual(findCourseByQuery('toc').id, 'c6')
+    assert.strictEqual(findCourseByQuery('textbook').id, 'c7')
+    assert.strictEqual(findCourseByQuery('english').id, 'c9')
+    assert.strictEqual(findCourseByQuery('arabic').id, 'c10')
+    assert.strictEqual(findCourseByQuery('think').id, 'c11')
+    assert.strictEqual(findCourseByQuery('baath').id, 'c12')
+
+    // Pure English input
+    const enInput = `Course: Computer Architecture\nTitle: Midterm Exam 1\nDue: in 3 days\nTime: 10:30\nHall: Lab 2\nDetails: Assembly and 8086 registers`
+    const kvEn = parseKeyValues(enInput)
+    assert.strictEqual(kvEn['course'], 'Computer Architecture')
+    assert.strictEqual(kvEn['title'], 'Midterm Exam 1')
+    assert.strictEqual(kvEn['due'], 'in 3 days')
+    assert.strictEqual(kvEn['time'], '10:30')
+    assert.strictEqual(kvEn['hall'], 'Lab 2')
+    assert.strictEqual(kvEn['details'], 'Assembly and 8086 registers')
+
+    // Bilingual label splitting
+    const biInput = `المادة / Course: معمارية الحاسوب\nالعنوان / Title: امتحان شهر أول\nالموعد / Due: tomorrow\nالقاعة / Hall: Hall 3`
+    const kvBi = parseKeyValues(biInput)
+    assert.strictEqual(kvBi['course'], 'معمارية الحاسوب')
+    assert.strictEqual(kvBi['المادة'], 'معمارية الحاسوب')
+    assert.strictEqual(kvBi['title'], 'امتحان شهر أول')
+    assert.strictEqual(kvBi['العنوان'], 'امتحان شهر أول')
+    assert.strictEqual(kvBi['due'], 'tomorrow')
+    assert.strictEqual(kvBi['الموعد'], 'tomorrow')
+
+    // English Relative Due Dates
+    assert.strictEqual(parseDueOffsetAndDate('today').dueDays, 0)
+    assert.strictEqual(parseDueOffsetAndDate('tomorrow').dueDays, 1)
+    assert.strictEqual(parseDueOffsetAndDate('after tomorrow').dueDays, 2)
+    assert.strictEqual(parseDueOffsetAndDate('in 5 days').dueDays, 5)
+    assert.strictEqual(parseDueOffsetAndDate('after 4 days').dueDays, 4)
+    assert.strictEqual(parseDueOffsetAndDate('next week').dueDays, 7)
+
+    // English report categories
+    assert.strictEqual(parseReportCategory('lab report'), 'lab')
+    assert.strictEqual(parseReportCategory('practical'), 'lab')
+    assert.strictEqual(parseReportCategory('graduation project'), 'project')
+    assert.strictEqual(parseReportCategory('lecture notes'), 'course')
+  })
+
   it('handleAdminCommands lifecycle and security verification', async () => {
     const adminId = 1669700577 // Owner Admin
     const randomId = 999999999 // Unauthorized
@@ -285,11 +336,24 @@ describe('Telegram Bot Engine & Multi-Admin Security Verification', () => {
       text: `المادة: هياكل البيانات\nالعنوان: تقرير الأشجار الثنائية\nالنوع: lab\nالكاتب: محمد اركان`,
       reply_to_message: {
         message_id: 999,
-        text: '📊 إضافة تقرير دراسي',
+        text: '📊 إضافة تقرير دراسي | Add Report',
       },
     })
     assert.strictEqual(submitRes, true)
     assert.strictEqual(getUserSession(adminId), null) // Session cleared after submission
+
+    // 4c. Explicit reply in English creates assignment successfully
+    const submitEnRes = await handleAdminCommands({
+      message_id: 107,
+      from: { id: adminId },
+      chat: { id: 12345, type: 'private' },
+      text: `Course: Data Structures\nTitle: Linked List Homework\nDue: in 3 days\nTime: 23:59\nPlace: Online submission\nDetails: Implement doubly linked list in C++`,
+      reply_to_message: {
+        message_id: 998,
+        text: '📌 إضافة واجب | Add Assignment',
+      },
+    })
+    assert.strictEqual(submitEnRes, true)
   })
 })
 
